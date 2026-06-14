@@ -1,0 +1,33 @@
+body {
+    font-family: Arial;
+    background: #f2f2f2;
+    text-align: center;
+}
+
+.container {
+    width: 300px;
+    background: white;
+    margin: 50px auto;
+    padding: 20px;
+    border-radius: 10px;
+}
+
+input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+}
+
+button {
+    width: 95%;
+    padding: 12px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+video,
+img,
+button {
+    display: block;
+    margin: 10px auto;
+}

@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>
+        Welcome {{ employee.full_name }}
+    </h1>
+
+    <h3>
+        Centre: {{ employee.centre }}
+    </h3>
+
+    <video
+        id="video"
+        width="250"
+        autoplay
+        playsinline
+        style="display:none;"
+    ></video>
+
+    <canvas
+        id="canvas"
+        style="display:none;"
+    ></canvas>
+
+    <img
+        id="photoPreview"
+        width="180"
+        style="display:none;"
+    >
+
+    <br><br>
+
+<button
+    id="captureBtn"
+    onclick="capturePhoto()"
+    style="display:none;"
+>
+    📸 Capture Selfie
+</button>
+
+<button
+    id="confirmBtn"
+    style="display:none;"
+>
+    ✅ Confirm
+</button>
+
+{% if attendance is none %}
+
+<button
+    id="startBtn"
+    onclick="startPunchIn()"
+>
+    Punch In
+</button>
+
+{% elif attendance.punch_out is none %}
+
+<p>
+    ✅ Punched In
+</p>
+
+<p>
+    Punch In:
+    {{ attendance.punch_in }}
+</p>
+
+<button
+    id="punchOutBtn"
+    onclick="punchOut()"
+>
+    Punch Out
+</button>
+
+{% else %}
+
+<p>
+    ✅ Attendance Completed
+</p>
+
+<p>
+    Punch In:
+    {{ attendance.punch_in }}
+</p>
+
+<p>
+    Punch Out:
+    {{ attendance.punch_out }}
+</p>
+
+<p>
+    Hours Worked:
+    {{ attendance.total_hours }}
+</p>
+
+<a href="/">
+    <button>
+        Logout
+    </button>
+</a>
+
+{% endif %}
+
+
+
+
+    <p id="status"></p>
+
+</div>
+<script>
+
+var capturedPhoto = null;
+var stream = null;
+
+async function startPunchIn() {
+
+    document.getElementById(
+        "startBtn"
+    ).style.display =
+        "none";
+
+    const punchOutBtn =
+        document.getElementById(
+            "punchOutBtn"
+        );
+
+    if (punchOutBtn) {
+        punchOutBtn.style.display =
+            "none";
+    }
+
+    stream =
+        await navigator
+        .mediaDevices
+        .getUserMedia({
+            video: true
+        });
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+    video.srcObject =
+        stream;
+
+    video.style.display =
+        "block";
+
+    document.getElementById(
+        "captureBtn"
+    ).style.display =
+        "block";
+
+    document.getElementById(
+        "captureBtn"
+    ).onclick =
+        capturePunchInPhoto;
+}
+
+
+
+function capturePunchInPhoto() {
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+    const canvas =
+        document.getElementById(
+            "canvas"
+        );
+
+    canvas.width =
+        video.videoWidth;
+
+    canvas.height =
+        video.videoHeight;
+
+    const context =
+        canvas.getContext(
+            "2d"
+        );
+
+    context.drawImage(
+        video,
+        0,
+        0
+    );
+
+    capturedPhoto =
+        canvas.toDataURL(
+            "image/jpeg"
+        );
+
+    document.getElementById(
+        "photoPreview"
+    ).src =
+        capturedPhoto;
+
+    document.getElementById(
+        "photoPreview"
+    ).style.display =
+        "block";
+
+    stream.getTracks()
+    .forEach(
+        track =>
+        track.stop()
+    );
+
+    video.style.display =
+        "none";
+
+    document.getElementById(
+        "captureBtn"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "confirmBtn"
+    ).style.display =
+        "block";
+
+    document.getElementById(
+        "confirmBtn"
+    ).innerHTML =
+        "✅ Confirm Punch In";
+
+    document.getElementById(
+        "confirmBtn"
+    ).onclick =
+        confirmPunchIn;
+}
+
+
+
+function confirmPunchIn() {
+
+    navigator.geolocation
+    .getCurrentPosition(
+        function(position){
+
+        fetch("/punch_in", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({
+
+                employee_id:
+                    "{{ employee.id }}",
+
+                latitude:
+                    position.coords.latitude,
+
+                longitude:
+                    position.coords.longitude,
+
+                photo:
+                    capturedPhoto
+            })
+
+        })
+
+        .then(response =>
+            response.text()
+        )
+
+        .then(html => {
+
+            document.open();
+            document.write(html);
+            document.close();
+
+        });
+
+    });
+}
+
+
+
+async function punchOut() {
+
+    document.getElementById(
+        "punchOutBtn"
+    ).style.display =
+        "none";
+
+    stream =
+        await navigator
+        .mediaDevices
+        .getUserMedia({
+            video: true
+        });
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+    video.srcObject =
+        stream;
+
+    video.style.display =
+        "block";
+
+    document.getElementById(
+        "captureBtn"
+    ).style.display =
+        "block";
+
+    document.getElementById(
+        "captureBtn"
+    ).onclick =
+        capturePunchOutPhoto;
+}
+
+function capturePunchOutPhoto() {
+
+    const video =
+        document.getElementById(
+            "video"
+        );
+
+    const canvas =
+        document.getElementById(
+            "canvas"
+        );
+
+    canvas.width =
+        video.videoWidth;
+
+    canvas.height =
+        video.videoHeight;
+
+    const context =
+        canvas.getContext(
+            "2d"
+        );
+
+    context.drawImage(
+        video,
+        0,
+        0
+    );
+
+    capturedPhoto =
+        canvas.toDataURL(
+            "image/jpeg"
+        );
+
+    document.getElementById(
+        "photoPreview"
+    ).src =
+        capturedPhoto;
+
+    document.getElementById(
+        "photoPreview"
+    ).style.display =
+        "block";
+
+    stream.getTracks()
+    .forEach(
+        track =>
+        track.stop()
+    );
+
+    video.style.display =
+        "none";
+
+    document.getElementById(
+        "captureBtn"
+    ).style.display =
+        "none";
+
+    document.getElementById(
+        "confirmBtn"
+    ).style.display =
+        "block";
+
+    document.getElementById(
+        "confirmBtn"
+    ).innerHTML =
+        "✅ Confirm Punch Out";
+
+    document.getElementById(
+        "confirmBtn"
+    ).onclick =
+        confirmPunchOut;
+}
+
+function confirmPunchOut() {
+
+    navigator.geolocation
+    .getCurrentPosition(
+        function(position){
+
+        fetch("/punch_out", {
+
+            method: "POST",
+
+            headers: {
+                "Content-Type":
+                    "application/json"
+            },
+
+            body: JSON.stringify({
+
+                employee_id:
+                    "{{ employee.id }}",
+
+                latitude:
+                    position.coords.latitude,
+
+                longitude:
+                    position.coords.longitude,
+
+                photo:
+                    capturedPhoto
+            })
+
+        })
+
+        .then(response =>
+            response.text()
+        )
+
+        .then(html => {
+
+            document.open();
+            document.write(html);
+            document.close();
+
+        });
+
+    });
+}
+
+</script>
+
+</body>
+</html>
