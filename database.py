@@ -173,12 +173,8 @@ def mark_punch_out(
         )
     )
 
-    punch_out_time = (
-        datetime.now(
-            ZoneInfo(
-                "Asia/Kolkata"
-            )
-        )
+    punch_out_time = datetime.now(
+        punch_in_time.tzinfo
     )
     total_hours = (
         punch_out_time
