@@ -173,9 +173,14 @@ def mark_punch_out(
         )
     )
 
-    punch_out_time = datetime.now(
-        punch_in_time.tzinfo
+    punch_out_time = (
+        datetime.now(
+            ZoneInfo(
+                "Asia/Kolkata"
+            )
+        )
     )
+
     total_hours = (
         punch_out_time
         -
@@ -188,9 +193,8 @@ def mark_punch_out(
     ).update(
         {
             "punch_out":
-                str(
-                    punch_out_time
-                ),
+                punch_out_time
+                .isoformat(),
 
             "total_hours":
                 round(
@@ -206,7 +210,6 @@ def mark_punch_out(
     return (
         "Punch out successful"
     )
-
 
 def save_photo_url(
         employee_id,
