@@ -4,7 +4,8 @@
 from flask import (
     Flask,
     render_template,
-    request
+    request,
+    redirect
 )
 
 from database import (
