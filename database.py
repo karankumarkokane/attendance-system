@@ -172,7 +172,21 @@ def mark_punch_out(
             ]
         )
     )
-
+    
+    if (
+        punch_in_time.tzinfo
+        is None
+    ):
+    
+        punch_in_time = (
+            punch_in_time
+            .replace(
+                tzinfo=ZoneInfo(
+                    "Asia/Kolkata"
+                )
+            )
+        )
+    
     punch_out_time = (
         datetime.now(
             ZoneInfo(
@@ -180,7 +194,6 @@ def mark_punch_out(
             )
         )
     )
-
     total_hours = (
         punch_out_time
         -
