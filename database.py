@@ -2,6 +2,7 @@
 from geopy.distance import geodesic
 import base64
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from supabase import create_client
 from dotenv import load_dotenv
 import os
@@ -46,9 +47,12 @@ def mark_punch_in(employee_id):
     )
 
     current_time = str(
-        datetime.now()
+        datetime.now(
+            ZoneInfo(
+                "Asia/Kolkata"
+            )
+        )
     )
-
     response = supabase.table(
         "attendance"
     ).insert(
@@ -170,9 +174,12 @@ def mark_punch_out(
     )
 
     punch_out_time = (
-        datetime.now()
+        datetime.now(
+            ZoneInfo(
+                "Asia/Kolkata"
+            )
+        )
     )
-
     total_hours = (
         punch_out_time
         -
