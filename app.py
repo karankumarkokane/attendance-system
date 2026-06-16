@@ -9,6 +9,7 @@ from flask import (
 )
 
 from database import (
+    supabase,
     login_employee,
     mark_punch_in,
     mark_punch_out,
@@ -70,13 +71,22 @@ def punch_in():
     longitude = data["longitude"]
     photo = data["photo"]
     
-    employee = (
-        login_employee(
-            "karan",
-            "1234"
+    employee_response = (
+        supabase.table(
+            "employees"
         )
+        .select("*")
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
     )
-
+    
+    employee = (
+        employee_response
+        .data[0]
+    )
     allowed = check_location(
         employee,
         latitude,
