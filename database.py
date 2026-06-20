@@ -488,3 +488,78 @@ def get_employee(
     )
 
     return response.data[0]
+
+
+from datetime import date
+
+
+def get_leave_balance(employee_id):
+
+    employee = (
+        supabase.table("employees")
+        .select("*")
+        .eq("id", employee_id)
+        .execute()
+        .data[0]
+    )
+
+    joining_date = date.fromisoformat(
+        employee["joining_date"]
+    )
+
+    service_years = (
+        date.today() - joining_date
+    ).days / 365
+
+    if service_years >= 1:
+
+        total_cl = 8
+        total_sl = 6
+
+    else:
+
+        total_cl = 6
+        total_sl = 6
+
+    leaves = (
+        supabase.table("leave_requests")
+        .select("*")
+        .eq("employee_id", employee_id)
+        .eq("status", "Approved")
+        .execute()
+        .data
+    )
+
+    approved_cl = 0
+    approved_sl = 0
+
+    for leave in leaves:
+
+        from_date = date.fromisoformat(
+            leave["from_date"]
+        )
+
+        to_date = date.fromisoformat(
+            leave["to_date"]
+        )
+
+        leave_days = (
+            to_date - from_date
+        ).days + 1
+
+        if leave["leave_type"] == "CL":
+
+            approved_cl += leave_days
+
+        elif leave["leave_type"] == "SL":
+
+            approved_sl += leave_days
+
+    return {
+
+        "cl_remaining":
+            total_cl - approved_cl,
+
+        "sl_remaining":
+            total_sl - approved_sl
+    }

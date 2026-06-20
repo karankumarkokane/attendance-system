@@ -10,7 +10,7 @@ from flask import (
 )
 
 
-
+from datetime import date
 from database import (
     supabase,
     login_employee,
@@ -27,7 +27,8 @@ from database import (
     approve_leave,
     reject_leave,
     get_employee_leaves,
-    get_employee
+    get_employee,
+    get_leave_balance
 )
 
 app = Flask(__name__)
@@ -305,11 +306,47 @@ def submit_leave():
     to_date = (
         request.form["to_date"]
     )
+    from datetime import date
 
+    leave_days = (
+    
+        date.fromisoformat(to_date)
+    
+        - date.fromisoformat(from_date)
+    
+    ).days + 1
+    
+    balance = get_leave_balance(employee_id)
+
+    if leave_type == "CL":
+    
+        if leave_days > balance[
+            "cl_remaining"
+        ]:
+    
+            return (
+                f"❌ Only "
+                f'{balance["cl_remaining"]} '
+                f"CL days remaining"
+            )
+
+
+    if leave_type == "SL":
+
+        if leave_days > balance[
+            "sl_remaining"
+        ]:
+    
+            return (
+                f"❌ Only "
+                f'{balance["sl_remaining"]} '
+                f"SL days remaining"
+            )
+        
     reason = (
         request.form["reason"]
     )
-
+    
     apply_leave(
 
         employee_id,
@@ -422,29 +459,51 @@ def my_leaves():
         total_sl = 6
 
     # ADD THIS PART HERE
-    approved_cl = len([
+    approved_cl = 0
+    
+    for leave in leaves:
+    
+        if (
+            leave["status"] == "Approved"
+            and leave["leave_type"] == "CL"
+        ):
+    
+            from_date = date.fromisoformat(
+                leave["from_date"]
+            )
+    
+            to_date = date.fromisoformat(
+                leave["to_date"]
+            )
+    
+            leave_days = (
+                to_date - from_date
+            ).days + 1
+    
+            approved_cl += leave_days
 
-        leave
-
-        for leave in leaves
-
-        if leave["status"] == "Approved"
-
-        and leave["leave_type"] == "CL"
-
-    ])
-
-    approved_sl = len([
-
-        leave
-
-        for leave in leaves
-
-        if leave["status"] == "Approved"
-
-        and leave["leave_type"] == "SL"
-
-    ])
+    approved_sl = 0
+    
+    for leave in leaves:
+    
+        if (
+            leave["status"] == "Approved"
+            and leave["leave_type"] == "SL"
+        ):
+    
+            from_date = date.fromisoformat(
+                leave["from_date"]
+            )
+    
+            to_date = date.fromisoformat(
+                leave["to_date"]
+            )
+    
+            leave_days = (
+                to_date - from_date
+            ).days + 1
+    
+            approved_sl += leave_days
 
     cl_remaining = (
         total_cl
@@ -456,12 +515,25 @@ def my_leaves():
         - approved_sl
     )
 
-    approved = len([
-        leave
-        for leave in leaves
-        if leave["status"] == "Approved"
-    ])
-
+    approved = 0
+    
+    for leave in leaves:
+    
+        if leave["status"] == "Approved":
+    
+            from_date = date.fromisoformat(
+                leave["from_date"]
+            )
+    
+            to_date = date.fromisoformat(
+                leave["to_date"]
+            )
+    
+            leave_days = (
+                to_date - from_date
+            ).days + 1
+    
+            approved += leave_days
     pending = len([
         leave
         for leave in leaves
@@ -475,17 +547,26 @@ def my_leaves():
     ])
 
     return render_template(
+    
         "my_leaves.html",
-
+    
         leaves=leaves,
-
+    
         approved=approved,
+    
         pending=pending,
+    
         rejected=rejected,
-
+    
         cl_remaining=cl_remaining,
-        sl_remaining=sl_remaining
+    
+        sl_remaining=sl_remaining,
+    
+        total_cl=total_cl,
+    
+        total_sl=total_sl
     )
+
 if __name__ == "__main__":
     app.run(
         debug=True,
