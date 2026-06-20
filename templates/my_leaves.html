@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        My Leaves
+    </title>
+</head>
+
+<body>
+
+<h2>
+    My Leave Requests
+</h2>
+
+<h3>
+    Leave Balance
+</h3>
+
+<p>
+    CL Remaining : {{ cl_remaining }}
+</p>
+
+<p>
+    SL Remaining : {{ sl_remaining }}
+</p>
+
+<hr>
+<h3>
+    Leave Summary
+</h3>
+
+<p>
+    Approved Leaves : {{ approved }}
+</p>
+
+<p>
+    Pending Leaves : {{ pending }}
+</p>
+
+<p>
+    Rejected Leaves : {{ rejected }}
+</p>
+
+<hr>
+<table border="1">
+
+<tr>
+    <th>Type</th>
+    <th>From</th>
+    <th>To</th>
+    <th>Status</th>
+</tr>
+
+{% for leave in leaves %}
+
+<tr>
+
+<td>
+    {{ leave.leave_type }}
+</td>
+
+<td>
+    {{ leave.from_date }}
+</td>
+
+<td>
+    {{ leave.to_date }}
+</td>
+
+<td>
+    {{ leave.status }}
+</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+<br>
+
+<a href="/dashboard">
+    Back to Dashboard
+</a>
+
+</body>
+</html>

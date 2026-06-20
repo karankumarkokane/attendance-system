@@ -5,8 +5,11 @@ from flask import (
     Flask,
     render_template,
     request,
-    redirect
+    redirect,
+    session
 )
+
+
 
 from database import (
     supabase,
@@ -18,11 +21,17 @@ from database import (
     save_photo_url,
     save_photo_out_url,
     upload_photo,
-    get_today_attendance
+    get_today_attendance,
+    apply_leave,
+    get_leave_requests,
+    approve_leave,
+    reject_leave,
+    get_employee_leaves,
+    get_employee
 )
 
 app = Flask(__name__)
-
+app.secret_key = "kkls_secret_key"
 
 @app.route("/")
 def home():
@@ -45,6 +54,12 @@ def login():
 
     if employee:
     
+        session["employee_id"] = (
+            employee["id"]
+        )
+        session["is_admin"] = employee["is_admin"]
+
+        session["full_name"] = employee["full_name"]
         attendance = get_today_attendance(
                 employee["id"]
         )
@@ -208,15 +223,269 @@ def punch_out():
         attendance=attendance
     )
 
-@app.route(
-    "/logout"
-)
+@app.route("/logout")
 def logout():
 
-    return redirect(
-        "/"
+    session.clear()
+
+    return redirect("/")
+
+
+@app.route("/leave")
+def leave():
+    if "employee_id" not in session:
+        return redirect("/")
+
+    return render_template(
+        "leave.html"
     )
 
+
+@app.route("/dashboard")
+def dashboard():
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    employee_id = session.get(
+        "employee_id"
+    )
+
+    if not employee_id:
+        return redirect("/")
+
+    employee_response = (
+        supabase.table(
+            "employees"
+        )
+        .select("*")
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
+    )
+
+    employee = (
+        employee_response.data[0]
+    )
+
+    attendance = (
+        get_today_attendance(
+            employee_id
+        )
+    )
+
+    return render_template(
+        "dashboard.html",
+        employee=employee,
+        attendance=attendance
+    )
+
+@app.route(
+    "/submit_leave",
+    methods=["POST"]
+)
+def submit_leave():
+    if "employee_id" not in session:
+        return redirect("/")
+    
+    employee_id = (
+        session["employee_id"]
+    )
+
+    leave_type = (
+        request.form["leave_type"]
+    )
+
+    from_date = (
+        request.form["from_date"]
+    )
+
+    to_date = (
+        request.form["to_date"]
+    )
+
+    reason = (
+        request.form["reason"]
+    )
+
+    apply_leave(
+
+        employee_id,
+
+        leave_type,
+
+        from_date,
+
+        to_date,
+
+        reason
+    )
+
+    return """
+    <h2>
+        Leave Request Submitted
+    </h2>
+
+    <a href='/dashboard'>
+        Back to Dashboard
+    </a>
+    """
+@app.route("/admin_leaves")
+def admin_leaves():
+    if "employee_id" not in session:
+        return redirect("/")
+    
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    leaves = get_leave_requests()
+
+    return render_template(
+        "admin_leaves.html",
+        leaves=leaves
+    )
+
+@app.route(
+    "/approve_leave/<int:leave_id>"
+)
+def approve_leave_route(
+    leave_id
+):
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+    
+    approve_leave(
+        leave_id,
+        session["full_name"]
+    )
+
+    return redirect(
+        "/admin_leaves"
+    )
+
+@app.route(
+    "/reject_leave/<int:leave_id>"
+)
+def reject_leave_route(
+    leave_id
+):
+
+    reject_leave(
+        leave_id,
+        session["full_name"]
+    )
+
+    return redirect(
+        "/admin_leaves"
+    )
+
+@app.route("/my_leaves")
+def my_leaves():
+
+    if "employee_id" not in session:
+
+        return redirect("/")
+
+    employee_id = session["employee_id"]
+
+    leaves = get_employee_leaves(
+        employee_id
+    )
+
+    employee = get_employee(
+        employee_id
+    )
+
+    from datetime import date
+
+    joining_date = date.fromisoformat(
+        employee["joining_date"]
+    )
+
+    today = date.today()
+
+    service_years = (
+        today - joining_date
+    ).days / 365
+
+    if service_years >= 1:
+
+        total_cl = 8
+        total_sl = 6
+
+    else:
+
+        total_cl = 6
+        total_sl = 6
+
+    # ADD THIS PART HERE
+    approved_cl = len([
+
+        leave
+
+        for leave in leaves
+
+        if leave["status"] == "Approved"
+
+        and leave["leave_type"] == "CL"
+
+    ])
+
+    approved_sl = len([
+
+        leave
+
+        for leave in leaves
+
+        if leave["status"] == "Approved"
+
+        and leave["leave_type"] == "SL"
+
+    ])
+
+    cl_remaining = (
+        total_cl
+        - approved_cl
+    )
+
+    sl_remaining = (
+        total_sl
+        - approved_sl
+    )
+
+    approved = len([
+        leave
+        for leave in leaves
+        if leave["status"] == "Approved"
+    ])
+
+    pending = len([
+        leave
+        for leave in leaves
+        if leave["status"] == "Pending"
+    ])
+
+    rejected = len([
+        leave
+        for leave in leaves
+        if leave["status"] == "Rejected"
+    ])
+
+    return render_template(
+        "my_leaves.html",
+
+        leaves=leaves,
+
+        approved=approved,
+        pending=pending,
+        rejected=rejected,
+
+        cl_remaining=cl_remaining,
+        sl_remaining=sl_remaining
+    )
 if __name__ == "__main__":
     app.run(
         debug=True,

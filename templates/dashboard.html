@@ -14,9 +14,37 @@
         Welcome {{ employee.full_name }}
     </h1>
 
-    <h3>
-        Centre: {{ employee.centre }}
-    </h3>
+<h3>
+    Centre: {{ employee.centre }}
+</h3>
+
+<a href="/leave">
+    <button>
+        Apply Leave
+    </button>
+</a>
+
+<a href="/my_leaves">
+    <button>
+        My Leaves
+    </button>
+</a>
+
+<br><br>
+
+{% if employee.is_admin %}
+
+<br><br>
+
+<a href="/admin_leaves">
+    <button>
+        Leave Approvals
+    </button>
+</a>
+
+{% endif %}
+
+<br><br>
 
     <video
         id="video"

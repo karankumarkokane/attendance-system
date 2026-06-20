@@ -340,3 +340,151 @@ def get_today_attendance(
         )
 
     return None
+
+
+def apply_leave(
+    employee_id,
+    leave_type,
+    from_date,
+    to_date,
+    reason
+):
+
+    response = (
+        supabase.table(
+            "leave_requests"
+        )
+        .insert({
+
+            "employee_id": employee_id,
+
+            "leave_type": leave_type,
+
+            "from_date": from_date,
+
+            "to_date": to_date,
+
+            "reason": reason,
+
+            "status": "Pending"
+
+        })
+        .execute()
+    )
+
+    return response
+
+
+def get_leave_requests():
+
+    response = (
+        supabase.table(
+            "leave_requests"
+        )
+        .select("*")
+        .order(
+            "applied_on",
+            desc=True
+        )
+        .execute()
+    )
+
+    return response.data
+
+from datetime import datetime
+
+def approve_leave(
+    leave_id,
+    approved_by
+):
+
+    return (
+        supabase.table(
+            "leave_requests"
+        )
+        .update({
+
+            "status": "Approved",
+
+            "approved_by": approved_by,
+
+            "approved_on":
+                datetime.now().isoformat()
+
+        })
+        .eq(
+            "id",
+            leave_id
+        )
+        .execute()
+    )
+        
+from datetime import datetime
+
+def reject_leave(
+    leave_id,
+    approved_by
+):
+
+    return (
+        supabase.table(
+            "leave_requests"
+        )
+        .update({
+
+            "status": "Rejected",
+
+            "approved_by": approved_by,
+
+            "approved_on":
+                datetime.now().isoformat()
+
+        })
+        .eq(
+            "id",
+            leave_id
+        )
+        .execute()
+    )
+        
+        
+def get_employee_leaves(
+    employee_id
+):
+
+    response = (
+        supabase.table(
+            "leave_requests"
+        )
+        .select("*")
+        .eq(
+            "employee_id",
+            employee_id
+        )
+        .order(
+            "applied_on",
+            desc=True
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def get_employee(
+    employee_id
+):
+
+    response = (
+        supabase.table(
+            "employees"
+        )
+        .select("*")
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
+    )
+
+    return response.data[0]
