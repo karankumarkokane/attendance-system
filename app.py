@@ -10,6 +10,10 @@ from flask import (
 )
 
 
+
+
+
+
 from datetime import date
 from database import (
     supabase,
@@ -28,7 +32,13 @@ from database import (
     reject_leave,
     get_employee_leaves,
     get_employee,
-    get_leave_balance
+    get_leave_balance,
+    
+    add_holiday,
+    get_holidays,
+    deactivate_holiday,
+    activate_holiday,
+    get_active_holidays,
 )
 
 app = Flask(__name__)
@@ -384,6 +394,96 @@ def admin_leaves():
         leaves=leaves
     )
 
+@app.route("/admin_holidays")
+def admin_holidays():
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    holidays = get_holidays()
+
+    return render_template(
+
+        "admin_holidays.html",
+
+        holidays=holidays
+    )
+
+@app.route(
+    "/add_holiday",
+    methods=["POST"]
+)
+def add_holiday_route():
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    holiday_date = (
+        request.form["holiday_date"]
+    )
+
+    holiday_name = (
+        request.form["holiday_name"]
+    )
+
+    holiday_type = (
+        request.form["holiday_type"]
+    )
+
+    add_holiday(
+
+        holiday_date,
+
+        holiday_name,
+
+        holiday_type,
+
+        session["full_name"]
+    )
+
+    return redirect(
+        "/admin_holidays"
+    )
+
+@app.route(
+    "/deactivate_holiday/<int:holiday_id>"
+)
+def deactivate_holiday_route(
+    holiday_id
+):
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    deactivate_holiday(
+        holiday_id
+    )
+
+    return redirect(
+        "/admin_holidays"
+    )
+
+@app.route(
+    "/activate_holiday/<int:holiday_id>"
+)
+def activate_holiday_route(
+    holiday_id
+):
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    activate_holiday(
+        holiday_id
+    )
+
+    return redirect(
+        "/admin_holidays"
+    )
+
 @app.route(
     "/approve_leave/<int:leave_id>"
 )
@@ -567,6 +667,21 @@ def my_leaves():
         total_sl=total_sl
     )
 
+@app.route("/holidays")
+def holidays():
+
+    if "employee_id" not in session:
+
+        return redirect("/")
+
+    holidays = get_active_holidays()
+
+    return render_template(
+
+        "holidays.html",
+
+        holidays=holidays
+    )
 if __name__ == "__main__":
     app.run(
         debug=True,

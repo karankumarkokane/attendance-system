@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <title>
+        Holiday Management
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="/static/style.css"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>
+        Holiday Management
+    </h1>
+
+    <h3>
+        Add New Holiday
+    </h3>
+
+    <form
+        action="/add_holiday"
+        method="POST"
+    >
+
+        <p>
+
+            Holiday Date
+
+            <br>
+
+            <input
+                type="date"
+                name="holiday_date"
+                required
+            >
+
+        </p>
+
+        <p>
+
+            Holiday Name
+
+            <br>
+
+            <input
+                type="text"
+                name="holiday_name"
+                required
+            >
+
+        </p>
+
+        <p>
+
+            Holiday Type
+
+            <br>
+
+            <select
+                name="holiday_type"
+            >
+
+                <option>
+                    Public
+                </option>
+
+                <option>
+                    Company
+                </option>
+
+                <option>
+                    Emergency
+                </option>
+
+            </select>
+
+        </p>
+
+        <button type="submit">
+
+            Add Holiday
+
+        </button>
+
+    </form>
+
+    <hr>
+
+    <h3>
+        Holiday List
+    </h3>
+
+    <table border="1">
+
+        <tr>
+
+            <th>
+                Date
+            </th>
+
+            <th>
+                Name
+            </th>
+
+            <th>
+                Type
+            </th>
+
+            <th>
+                Status
+            </th>
+
+            <th>
+                Action
+            </th>
+
+        </tr>
+
+        {% for holiday in holidays %}
+
+        <tr>
+
+            <td>
+
+                {{ holiday.holiday_date }}
+
+            </td>
+
+            <td>
+
+                {{ holiday.holiday_name }}
+
+            </td>
+
+            <td>
+
+                {{ holiday.holiday_type }}
+
+            </td>
+
+            <td>
+
+                {% if holiday.is_active %}
+
+                    Active
+
+                {% else %}
+
+                    Inactive
+
+                {% endif %}
+
+            </td>
+
+<td>
+
+    {% if holiday.is_active %}
+
+        <a href="/deactivate_holiday/{{ holiday.id }}">
+
+            Deactivate
+
+        </a>
+
+    {% else %}
+
+        <a href="/activate_holiday/{{ holiday.id }}">
+
+            Activate
+
+        </a>
+
+    {% endif %}
+
+</td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    <br><br>
+
+    <a href="/dashboard">
+
+        Back to Dashboard
+
+    </a>
+
+</div>
+
+</body>
+
+</html>

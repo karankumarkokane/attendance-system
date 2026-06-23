@@ -563,3 +563,123 @@ def get_leave_balance(employee_id):
         "sl_remaining":
             total_sl - approved_sl
     }
+        
+        
+def add_holiday(
+
+    holiday_date,
+
+    holiday_name,
+
+    holiday_type,
+
+    created_by
+):
+
+    response = (
+        supabase.table(
+            "holidays"
+        )
+        .insert({
+
+            "holiday_date":
+                holiday_date,
+
+            "holiday_name":
+                holiday_name,
+
+            "holiday_type":
+                holiday_type,
+
+            "created_by":
+                created_by,
+
+            "is_active":
+                True
+
+        })
+        .execute()
+    )
+
+    return response
+
+def get_holidays():
+
+    response = (
+        supabase.table(
+            "holidays"
+        )
+        .select("*")
+        .order(
+            "holiday_date"
+        )
+        .execute()
+    )
+
+    return response.data
+
+def get_active_holidays():
+
+    response = (
+        supabase.table(
+            "holidays"
+        )
+        .select("*")
+        .eq(
+            "is_active",
+            True
+        )
+        .order(
+            "holiday_date"
+        )
+        .execute()
+    )
+
+    return response.data
+
+def deactivate_holiday(
+    holiday_id
+):
+
+    response = (
+        supabase.table(
+            "holidays"
+        )
+        .update({
+
+            "is_active":
+                False
+
+        })
+        .eq(
+            "id",
+            holiday_id
+        )
+        .execute()
+    )
+
+    return response
+
+
+def activate_holiday(
+    holiday_id
+):
+
+    response = (
+        supabase.table(
+            "holidays"
+        )
+        .update({
+
+            "is_active":
+                True
+
+        })
+        .eq(
+            "id",
+            holiday_id
+        )
+        .execute()
+    )
+
+    return response
