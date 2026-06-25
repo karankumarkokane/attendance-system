@@ -1,70 +1,54 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <title>
-        Leave Requests
-    </title>
-</head>
+{% block title %}Leave Requests{% endblock %}
+{% block page_title %}Leave Requests{% endblock %}
 
-<body>
-
-<h2>
-    Leave Requests
-</h2>
-
-<table border="1">
-
-<tr>
-    <th>ID</th>
-    <th>Employee ID</th>
-    <th>Type</th>
-    <th>From</th>
-    <th>To</th>
-    <th>Status</th>
-    <th>Action</th>
-</tr>
-
-{% for leave in leaves %}
-
-<tr>
-
-<td>{{ leave.id }}</td>
-
-<td>{{ leave.employee_id }}</td>
-
-<td>{{ leave.leave_type }}</td>
-
-<td>{{ leave.from_date }}</td>
-
-<td>{{ leave.to_date }}</td>
-
-<td>{{ leave.status }}</td>
-
-<td>
-
-{% if leave.status == "Pending" %}
-
-<a href="/approve_leave/{{ leave.id }}">
-    Approve
-</a>
-
-|
-
-<a href="/reject_leave/{{ leave.id }}">
-    Reject
-</a>
-
-{% endif %}
-
-</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
-</body>
-
-</html>
+{% block content %}
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Employee ID</th>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave in leaves %}
+                <tr>
+                    <td>{{ leave.id }}</td>
+                    <td>{{ leave.employee_id }}</td>
+                    <td>{{ leave.leave_type }}</td>
+                    <td>{{ leave.from_date }}</td>
+                    <td>{{ leave.to_date }}</td>
+                    <td><span class="status">{{ leave.status }}</span></td>
+                    <td>
+                        {% if leave.status == "Pending" %}
+                        <div class="inline-actions">
+                            <form action="/approve_leave/{{ leave.id }}" method="POST">
+                                <button class="small success" type="submit">Approve</button>
+                            </form>
+                            <form action="/reject_leave/{{ leave.id }}" method="POST">
+                                <button class="small danger" type="submit">Reject</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span class="muted">Reviewed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">No leave requests found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

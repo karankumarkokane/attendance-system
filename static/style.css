@@ -1,33 +1,386 @@
+:root {
+    color-scheme: light;
+    --bg: #f5f7fb;
+    --panel: #ffffff;
+    --text: #172033;
+    --muted: #657084;
+    --border: #dfe5ef;
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --success: #16803c;
+    --danger: #c03232;
+    --shadow: 0 10px 28px rgba(23, 32, 51, 0.08);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 body {
-    font-family: Arial;
-    background: #f2f2f2;
-    text-align: center;
+    margin: 0;
+    min-height: 100vh;
+    font-family: Arial, Helvetica, sans-serif;
+    background: var(--bg);
+    color: var(--text);
 }
 
-.container {
-    width: 300px;
-    background: white;
-    margin: 50px auto;
-    padding: 20px;
-    border-radius: 10px;
+a {
+    color: var(--primary);
+    text-decoration: none;
 }
 
-input {
-    width: 90%;
-    padding: 12px;
-    margin: 10px 0;
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 22px 32px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
 }
 
-button {
-    width: 95%;
-    padding: 12px;
-    margin-top: 10px;
+.topbar h1 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.2;
+}
+
+.eyebrow {
+    margin: 0 0 4px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0;
+    text-transform: uppercase;
+}
+
+.nav-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.nav-actions a,
+.button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 9px 13px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.nav-actions .danger-link {
+    color: var(--danger);
+}
+
+.page {
+    width: min(1080px, calc(100% - 32px));
+    margin: 28px auto;
+}
+
+.auth-panel {
+    width: min(420px, 100%);
+    margin: 40px auto;
+}
+
+.panel,
+.attendance-panel,
+.form-card,
+.stat-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+.panel,
+.attendance-panel,
+.form-card {
+    padding: 24px;
+}
+
+.panel + .panel {
+    margin-top: 20px;
+}
+
+.panel h2 {
+    margin: 0 0 18px;
+    font-size: 20px;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.stat-card {
+    padding: 18px;
+}
+
+.stat-card span {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.stat-card strong {
+    display: block;
+    font-size: 22px;
+    line-height: 1.2;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.form-card {
+    display: grid;
+    gap: 16px;
+}
+
+label {
+    display: grid;
+    gap: 7px;
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 11px 12px;
+    background: #fff;
+    color: var(--text);
+    font: inherit;
+}
+
+.checkbox-field {
+    align-content: end;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 68px;
+}
+
+.checkbox-field input {
+    width: auto;
+}
+
+.compact-input {
+    width: 150px;
+    padding: 8px 10px;
+}
+
+textarea {
+    resize: vertical;
+}
+
+.full-width {
+    grid-column: 1 / -1;
+}
+
+button,
+.button {
+    border: 0;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
     cursor: pointer;
+    font: inherit;
+    font-weight: 700;
+    padding: 11px 15px;
+}
+
+button:hover,
+.button:hover {
+    background: var(--primary-dark);
+}
+
+button.secondary,
+.button.secondary {
+    border: 1px solid var(--border);
+    background: #fff;
+    color: var(--text);
+}
+
+button.small {
+    min-width: 92px;
+    padding: 8px 10px;
+    font-size: 13px;
+}
+
+button.success {
+    background: var(--success);
+}
+
+button.danger {
+    background: var(--danger);
+}
+
+.button-row,
+.inline-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.attendance-panel {
+    display: grid;
+    grid-template-columns: minmax(260px, 380px) 1fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.camera-box {
+    display: grid;
+    place-items: center;
+    min-height: 280px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    background: #f8fafc;
+    overflow: hidden;
 }
 
 video,
-img,
-button {
-    display: block;
-    margin: 10px auto;
+#photoPreview {
+    width: 100%;
+    max-width: 360px;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.attendance-actions {
+    display: grid;
+    gap: 14px;
+}
+
+.attendance-status {
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.time-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin: 0;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.time-row span {
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.status-message {
+    min-height: 22px;
+    margin: 0;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.status-message.error,
+.danger-text {
+    color: var(--danger);
+}
+
+.success-text {
+    color: var(--success);
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.table-wrap {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 680px;
+}
+
+th,
+td {
+    padding: 13px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+}
+
+th {
+    color: var(--muted);
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.status {
+    font-weight: 700;
+}
+
+.empty-state {
+    padding: 28px 12px;
+    color: var(--muted);
+    text-align: center;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+@media (max-width: 760px) {
+    .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        padding: 18px;
+    }
+
+    .nav-actions {
+        justify-content: flex-start;
+    }
+
+    .page {
+        width: min(100% - 20px, 1080px);
+        margin: 18px auto;
+    }
+
+    .form-grid,
+    .attendance-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .panel,
+    .attendance-panel,
+    .form-card {
+        padding: 18px;
+    }
+
+    .camera-box {
+        min-height: 220px;
+    }
+
+    .time-row {
+        display: grid;
+    }
 }

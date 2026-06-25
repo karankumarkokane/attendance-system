@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Employees{% endblock %}
+{% block page_title %}Employee Management{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <h2>Add New Employee</h2>
+
+    <form action="/add_employee" method="POST" class="form-grid">
+        <label>
+            Full Name
+            <input type="text" name="full_name" required>
+        </label>
+
+        <label>
+            Username
+            <input type="text" name="username" required>
+        </label>
+
+        <label>
+            Password
+            <input type="text" name="password" required>
+        </label>
+
+        <label>
+            Centre
+            <input type="text" name="centre" required>
+        </label>
+
+        <label>
+            Joining Date
+            <input type="date" name="joining_date" required>
+        </label>
+
+        <label>
+            Allowed Radius Metres
+            <input type="number" name="allowed_radius" min="1" value="100" required>
+        </label>
+
+        <label>
+            Office Latitude
+            <input type="number" name="latitude" step="0.000001" required>
+        </label>
+
+        <label>
+            Office Longitude
+            <input type="number" name="longitude" step="0.000001" required>
+        </label>
+
+        <label class="checkbox-field">
+            <input type="checkbox" name="is_admin">
+            Admin user
+        </label>
+
+        <div class="button-row full-width">
+            <button type="submit">Add Employee</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <h2>Employee List</h2>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Username</th>
+                    <th>Centre</th>
+                    <th>Joining Date</th>
+                    <th>Status</th>
+                    <th>Last Office Day</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for employee in employees %}
+                <tr>
+                    <td>{{ employee.full_name }}</td>
+                    <td>{{ employee.username }}</td>
+                    <td>{{ employee.centre }}</td>
+                    <td>{{ employee.joining_date }}</td>
+                    <td>
+                        {% if employee.is_active %}
+                        <span class="status success-text">Active</span>
+                        {% else %}
+                        <span class="status muted">Inactive</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ employee.get("last_office_day") or "-" }}</td>
+                    <td>
+                        {% if employee.is_active %}
+                        <form
+                            action="/mark_employee_left/{{ employee.id }}"
+                            method="POST"
+                            class="inline-actions"
+                        >
+                            <input
+                                class="compact-input"
+                                type="date"
+                                name="last_office_day"
+                                required
+                            >
+                            <button class="small danger" type="submit">
+                                Mark Left
+                            </button>
+                        </form>
+                        {% else %}
+                        <form action="/reactivate_employee/{{ employee.id }}" method="POST">
+                            <button class="small success" type="submit">
+                                Reactivate
+                            </button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">No employees found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

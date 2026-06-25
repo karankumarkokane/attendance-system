@@ -1,89 +1,58 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <title>
-        My Leaves
-    </title>
-</head>
+{% block title %}My Leaves{% endblock %}
+{% block page_title %}My Leave Requests{% endblock %}
 
-<body>
+{% block content %}
+<section class="summary-grid">
+    <article class="stat-card">
+        <span>CL Remaining</span>
+        <strong>{{ cl_remaining }} / {{ total_cl }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>SL Remaining</span>
+        <strong>{{ sl_remaining }} / {{ total_sl }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Cycle Months</span>
+        <strong>{{ eligible_months }} / 12</strong>
+    </article>
+    <article class="stat-card">
+        <span>Approved Days</span>
+        <strong>{{ approved }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Pending Requests</span>
+        <strong>{{ pending }}</strong>
+    </article>
+</section>
 
-<h2>
-    My Leave Requests
-</h2>
-
-<h3>
-    Leave Balance
-</h3>
-
-<p>
-    CL Remaining :
-    {{ cl_remaining }} / {{ total_cl }}
-</p>
-
-<p>
-    SL Remaining :
-    {{ sl_remaining }} / {{ total_sl }}
-</p>
-<hr>
-<h3>
-    Leave Summary
-</h3>
-
-<p>
-    Approved Leave Days : {{ approved }}
-</p>
-
-<p>
-    Pending Leave Days : {{ pending }}
-</p>
-
-<p>
-    Rejected Leave Days : {{ rejected }}
-</p>
-
-<hr>
-<table border="1">
-
-<tr>
-    <th>Type</th>
-    <th>From</th>
-    <th>To</th>
-    <th>Status</th>
-</tr>
-
-{% for leave in leaves %}
-
-<tr>
-
-<td>
-    {{ leave.leave_type }}
-</td>
-
-<td>
-    {{ leave.from_date }}
-</td>
-
-<td>
-    {{ leave.to_date }}
-</td>
-
-<td>
-    {{ leave.status }}
-</td>
-
-</tr>
-
-{% endfor %}
-
-</table>
-
-<br>
-
-<a href="/dashboard">
-    Back to Dashboard
-</a>
-
-</body>
-</html>
+<section class="panel">
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>From</th>
+                    <th>To</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for leave in leaves %}
+                <tr>
+                    <td>{{ leave.leave_type }}</td>
+                    <td>{{ leave.from_date }}</td>
+                    <td>{{ leave.to_date }}</td>
+                    <td><span class="status">{{ leave.status }}</span></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="empty-state">No leave requests yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

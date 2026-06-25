@@ -1,501 +1,215 @@
-<!DOCTYPE html>
-<html>
+{% extends "base.html" %}
 
-<head>
-    <title>Dashboard</title>
-    <link rel="stylesheet" href="/static/style.css">
-</head>
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Welcome, {{ employee.full_name }}{% endblock %}
 
-<body>
+{% block content %}
+<section class="summary-grid">
+    <article class="stat-card">
+        <span>Centre</span>
+        <strong>{{ employee.centre }}</strong>
+    </article>
+    <article class="stat-card">
+        <span>Today</span>
+        {% if attendance is none %}
+        <strong>Not punched in</strong>
+        {% elif attendance.punch_out is none %}
+        <strong>Punched in</strong>
+        {% else %}
+        <strong>Completed</strong>
+        {% endif %}
+    </article>
+    {% if attendance and attendance.total_hours %}
+    <article class="stat-card">
+        <span>Hours Worked</span>
+        <strong>{{ attendance.total_hours }}</strong>
+    </article>
+    {% endif %}
+</section>
 
-<div class="container">
+<section class="attendance-panel">
+    <div class="camera-box">
+        <video id="video" autoplay playsinline hidden></video>
+        <canvas id="canvas" hidden></canvas>
+        <img id="photoPreview" alt="Captured selfie preview" hidden>
+    </div>
 
-    <h1>
-        Welcome {{ employee.full_name }}
-    </h1>
+    <div class="attendance-actions">
+        <button id="captureBtn" onclick="capturePhoto()" hidden>Capture Selfie</button>
+        <button id="confirmBtn" hidden>Confirm</button>
 
-<h3>
-    Centre: {{ employee.centre }}
-</h3>
+        {% if attendance is none %}
+        <button id="startBtn" onclick="startPunchIn()">Punch In</button>
+        {% elif attendance.punch_out is none %}
+        <div class="attendance-status success-text">
+            Punched In
+        </div>
+        <p class="time-row">
+            <span>Punch In</span>
+            <strong>{{ attendance.punch_in }}</strong>
+        </p>
+        <button id="punchOutBtn" onclick="punchOut()">Punch Out</button>
+        {% else %}
+        <div class="attendance-status success-text">
+            Attendance Completed
+        </div>
+        <p class="time-row">
+            <span>Punch In</span>
+            <strong>{{ attendance.punch_in }}</strong>
+        </p>
+        <p class="time-row">
+            <span>Punch Out</span>
+            <strong>{{ attendance.punch_out }}</strong>
+        </p>
+        <p class="time-row">
+            <span>Hours Worked</span>
+            <strong>{{ attendance.total_hours }}</strong>
+        </p>
+        {% endif %}
 
-<a href="/leave">
-    <button>
-        Apply Leave
-    </button>
-</a>
+        <p id="status" class="status-message"></p>
+    </div>
+</section>
+{% endblock %}
 
-<a href="/my_leaves">
-    <button>
-        My Leaves
-    </button>
-</a>
-<a href="/holidays">
-    <button>
-        Holiday Calendar
-    </button>
-</a>
-
-<br><br>
-
-{% if employee.is_admin %}
-
-<br><br>
-
-<a href="/admin_leaves">
-    <button>
-        Leave Requests
-    </button>
-</a>
-
-<a href="/admin_holidays">
-    <button>
-        Manage Holidays
-    </button>
-</a>
-
-{% endif %}
-<br><br>
-
-    <video
-        id="video"
-        width="250"
-        autoplay
-        playsinline
-        style="display:none;"
-    ></video>
-
-    <canvas
-        id="canvas"
-        style="display:none;"
-    ></canvas>
-
-    <img
-        id="photoPreview"
-        width="180"
-        style="display:none;"
-    >
-
-    <br><br>
-
-<button
-    id="captureBtn"
-    onclick="capturePhoto()"
-    style="display:none;"
->
-    📸 Capture Selfie
-</button>
-
-<button
-    id="confirmBtn"
-    style="display:none;"
->
-    ✅ Confirm
-</button>
-
-{% if attendance is none %}
-
-<button
-    id="startBtn"
-    onclick="startPunchIn()"
->
-    Punch In
-</button>
-
-{% elif attendance.punch_out is none %}
-
-<p>
-    ✅ Punched In
-</p>
-
-<p>
-    Punch In:
-    {{ attendance.punch_in }}
-</p>
-
-<button
-    id="punchOutBtn"
-    onclick="punchOut()"
->
-    Punch Out
-</button>
-<br><br>
-
-<a href="/logout">
-    <button>
-        Logout
-    </button>
-</a>
-{% else %}
-
-<p>
-    ✅ Attendance Completed
-</p>
-
-<p>
-    Punch In:
-    {{ attendance.punch_in }}
-</p>
-
-<p>
-    Punch Out:
-    {{ attendance.punch_out }}
-</p>
-
-<p>
-    Hours Worked:
-    {{ attendance.total_hours }}
-</p>
-
-<a href="/">
-    <button>
-        Logout
-    </button>
-</a>
-
-{% endif %}
-
-
-
-
-    <p id="status"></p>
-
-</div>
+{% block scripts %}
 <script>
+let capturedPhoto = null;
+let stream = null;
 
-var capturedPhoto = null;
-var stream = null;
+function setStatus(message, isError = false) {
+    const status = document.getElementById("status");
+    status.textContent = message;
+    status.classList.toggle("error", isError);
+}
+
+function showElement(id, show = true) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.hidden = !show;
+    }
+}
+
+function stopCamera() {
+    if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+    }
+}
+
+async function startCamera() {
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: true
+    });
+
+    const video = document.getElementById("video");
+    video.srcObject = stream;
+    showElement("video");
+}
 
 async function startPunchIn() {
-
-    document.getElementById(
-        "startBtn"
-    ).style.display =
-        "none";
-
-    const punchOutBtn =
-        document.getElementById(
-            "punchOutBtn"
-        );
-
-    if (punchOutBtn) {
-        punchOutBtn.style.display =
-            "none";
+    try {
+        showElement("startBtn", false);
+        showElement("punchOutBtn", false);
+        await startCamera();
+        showElement("captureBtn");
+        document.getElementById("captureBtn").onclick = capturePunchInPhoto;
+        setStatus("Camera ready. Capture your selfie.");
+    } catch (error) {
+        showElement("startBtn");
+        setStatus("Camera permission is required for punch in.", true);
     }
-
-    stream =
-        await navigator
-        .mediaDevices
-        .getUserMedia({
-            video: true
-        });
-
-    const video =
-        document.getElementById(
-            "video"
-        );
-
-    video.srcObject =
-        stream;
-
-    video.style.display =
-        "block";
-
-    document.getElementById(
-        "captureBtn"
-    ).style.display =
-        "block";
-
-    document.getElementById(
-        "captureBtn"
-    ).onclick =
-        capturePunchInPhoto;
 }
-
-
-
-function capturePunchInPhoto() {
-
-    const video =
-        document.getElementById(
-            "video"
-        );
-
-    const canvas =
-        document.getElementById(
-            "canvas"
-        );
-
-    canvas.width =
-        video.videoWidth;
-
-    canvas.height =
-        video.videoHeight;
-
-    const context =
-        canvas.getContext(
-            "2d"
-        );
-
-    context.drawImage(
-        video,
-        0,
-        0
-    );
-
-    capturedPhoto =
-        canvas.toDataURL(
-            "image/jpeg"
-        );
-
-    document.getElementById(
-        "photoPreview"
-    ).src =
-        capturedPhoto;
-
-    document.getElementById(
-        "photoPreview"
-    ).style.display =
-        "block";
-
-    stream.getTracks()
-    .forEach(
-        track =>
-        track.stop()
-    );
-
-    video.style.display =
-        "none";
-
-    document.getElementById(
-        "captureBtn"
-    ).style.display =
-        "none";
-
-    document.getElementById(
-        "confirmBtn"
-    ).style.display =
-        "block";
-
-    document.getElementById(
-        "confirmBtn"
-    ).innerHTML =
-        "✅ Confirm Punch In";
-
-    document.getElementById(
-        "confirmBtn"
-    ).onclick =
-        confirmPunchIn;
-}
-
-
-
-function confirmPunchIn() {
-
-    navigator.geolocation
-    .getCurrentPosition(
-        function(position){
-
-        fetch("/punch_in", {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-
-            body: JSON.stringify({
-
-                employee_id:
-                    "{{ employee.id }}",
-
-                latitude:
-                    position.coords.latitude,
-
-                longitude:
-                    position.coords.longitude,
-
-                photo:
-                    capturedPhoto
-            })
-
-        })
-
-        .then(response =>
-            response.text()
-        )
-
-        .then(html => {
-
-            document.open();
-            document.write(html);
-            document.close();
-
-        });
-
-    });
-}
-
-
 
 async function punchOut() {
+    try {
+        showElement("punchOutBtn", false);
+        await startCamera();
+        showElement("captureBtn");
+        document.getElementById("captureBtn").onclick = capturePunchOutPhoto;
+        setStatus("Camera ready. Capture your selfie.");
+    } catch (error) {
+        showElement("punchOutBtn");
+        setStatus("Camera permission is required for punch out.", true);
+    }
+}
 
-    document.getElementById(
-        "punchOutBtn"
-    ).style.display =
-        "none";
+function capturePhoto() {
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
 
-    stream =
-        await navigator
-        .mediaDevices
-        .getUserMedia({
-            video: true
-        });
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    canvas.getContext("2d").drawImage(video, 0, 0);
 
-    const video =
-        document.getElementById(
-            "video"
-        );
+    capturedPhoto = canvas.toDataURL("image/jpeg");
+    document.getElementById("photoPreview").src = capturedPhoto;
 
-    video.srcObject =
-        stream;
+    stopCamera();
+    showElement("video", false);
+    showElement("photoPreview");
+    showElement("captureBtn", false);
+    showElement("confirmBtn");
+}
 
-    video.style.display =
-        "block";
-
-    document.getElementById(
-        "captureBtn"
-    ).style.display =
-        "block";
-
-    document.getElementById(
-        "captureBtn"
-    ).onclick =
-        capturePunchOutPhoto;
+function capturePunchInPhoto() {
+    capturePhoto();
+    document.getElementById("confirmBtn").textContent = "Confirm Punch In";
+    document.getElementById("confirmBtn").onclick = confirmPunchIn;
 }
 
 function capturePunchOutPhoto() {
+    capturePhoto();
+    document.getElementById("confirmBtn").textContent = "Confirm Punch Out";
+    document.getElementById("confirmBtn").onclick = confirmPunchOut;
+}
 
-    const video =
-        document.getElementById(
-            "video"
-        );
+function submitAttendance(url) {
+    if (!capturedPhoto) {
+        setStatus("Please capture a selfie first.", true);
+        return;
+    }
 
-    const canvas =
-        document.getElementById(
-            "canvas"
-        );
+    setStatus("Checking your location...");
 
-    canvas.width =
-        video.videoWidth;
-
-    canvas.height =
-        video.videoHeight;
-
-    const context =
-        canvas.getContext(
-            "2d"
-        );
-
-    context.drawImage(
-        video,
-        0,
-        0
+    navigator.geolocation.getCurrentPosition(
+        function(position) {
+            fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    photo: capturedPhoto
+                })
+            })
+            .then(response => response.text())
+            .then(html => {
+                document.open();
+                document.write(html);
+                document.close();
+            })
+            .catch(() => {
+                setStatus("Could not submit attendance. Please try again.", true);
+            });
+        },
+        function() {
+            setStatus("Location permission is required for attendance.", true);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 15000
+        }
     );
+}
 
-    capturedPhoto =
-        canvas.toDataURL(
-            "image/jpeg"
-        );
-
-    document.getElementById(
-        "photoPreview"
-    ).src =
-        capturedPhoto;
-
-    document.getElementById(
-        "photoPreview"
-    ).style.display =
-        "block";
-
-    stream.getTracks()
-    .forEach(
-        track =>
-        track.stop()
-    );
-
-    video.style.display =
-        "none";
-
-    document.getElementById(
-        "captureBtn"
-    ).style.display =
-        "none";
-
-    document.getElementById(
-        "confirmBtn"
-    ).style.display =
-        "block";
-
-    document.getElementById(
-        "confirmBtn"
-    ).innerHTML =
-        "✅ Confirm Punch Out";
-
-    document.getElementById(
-        "confirmBtn"
-    ).onclick =
-        confirmPunchOut;
+function confirmPunchIn() {
+    submitAttendance("/punch_in");
 }
 
 function confirmPunchOut() {
-
-    navigator.geolocation
-    .getCurrentPosition(
-        function(position){
-
-        fetch("/punch_out", {
-
-            method: "POST",
-
-            headers: {
-                "Content-Type":
-                    "application/json"
-            },
-
-            body: JSON.stringify({
-
-                employee_id:
-                    "{{ employee.id }}",
-
-                latitude:
-                    position.coords.latitude,
-
-                longitude:
-                    position.coords.longitude,
-
-                photo:
-                    capturedPhoto
-            })
-
-        })
-
-        .then(response =>
-            response.text()
-        )
-
-        .then(html => {
-
-            document.open();
-            document.write(html);
-            document.close();
-
-        });
-
-    });
+    submitAttendance("/punch_out");
 }
-
 </script>
-
-</body>
-</html>
+{% endblock %}

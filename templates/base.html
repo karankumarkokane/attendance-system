@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Attendance System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+    <header class="topbar">
+        <div>
+            <p class="eyebrow">Attendance System</p>
+            <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+        </div>
+
+        {% if session.get("employee_id") %}
+        <nav class="nav-actions">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/leave">Apply Leave</a>
+            <a href="/my_leaves">My Leaves</a>
+            <a href="/holidays">Holidays</a>
+            {% if session.get("is_admin") %}
+            <a href="/admin_employees">Employees</a>
+            <a href="/admin_leaves">Leave Requests</a>
+            <a href="/admin_holidays">Manage Holidays</a>
+            {% endif %}
+            <a class="danger-link" href="/logout">Logout</a>
+        </nav>
+        {% endif %}
+    </header>
+
+    <main class="page">
+        {% block content %}{% endblock %}
+    </main>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

@@ -9,9 +9,7 @@ from flask import (
     session
 )
 
-
-
-
+import os
 
 
 from datetime import date
@@ -32,7 +30,12 @@ from database import (
     reject_leave,
     get_employee_leaves,
     get_employee,
+    get_employees,
+    add_employee,
+    mark_employee_left,
+    reactivate_employee,
     get_leave_balance,
+    get_leave_days_in_year,
     
     add_holiday,
     get_holidays,
@@ -42,7 +45,10 @@ from database import (
 )
 
 app = Flask(__name__)
-app.secret_key = "kkls_secret_key"
+app.secret_key = os.getenv(
+    "FLASK_SECRET_KEY",
+    "change-this-secret-key"
+)
 
 @app.route("/")
 def home():
@@ -87,11 +93,16 @@ def login():
 @app.route("/punch_in", methods=["POST"])
 def punch_in():
 
-    data = request.json
+    if "employee_id" not in session:
+        return redirect("/")
 
-    employee_id = int(
-        data["employee_id"]
-    )
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    employee_id = session[
+        "employee_id"
+    ]
 
     latitude = data["latitude"]
     longitude = data["longitude"]
@@ -164,11 +175,16 @@ def punch_in():
 )
 def punch_out():
 
-    data = request.json
+    if "employee_id" not in session:
+        return redirect("/")
 
-    employee_id = int(
-        data["employee_id"]
-    )
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    employee_id = session[
+        "employee_id"
+    ]
 
     latitude = data["latitude"]
     longitude = data["longitude"]
@@ -318,13 +334,33 @@ def submit_leave():
     )
     from datetime import date
 
+    from_date_value = date.fromisoformat(
+        from_date
+    )
+
+    to_date_value = date.fromisoformat(
+        to_date
+    )
+
+    if to_date_value < from_date_value:
+        return (
+            "To Date cannot be before From Date"
+        )
+
     leave_days = (
-    
-        date.fromisoformat(to_date)
-    
-        - date.fromisoformat(from_date)
-    
-    ).days + 1
+        get_leave_days_in_year(
+            {
+                "from_date": from_date,
+                "to_date": to_date
+            },
+            date.today().year
+        )
+    )
+
+    if leave_days == 0:
+        return (
+            "Leave request must be within the current leave cycle"
+        )
     
     balance = get_leave_balance(employee_id)
 
@@ -412,11 +448,116 @@ def admin_holidays():
         holidays=holidays
     )
 
+@app.route("/admin_employees")
+def admin_employees():
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    employees = get_employees()
+
+    return render_template(
+
+        "admin_employees.html",
+
+        employees=employees
+    )
+
+@app.route(
+    "/add_employee",
+    methods=["POST"]
+)
+def add_employee_route():
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    add_employee(
+
+        request.form["full_name"],
+
+        request.form["username"],
+
+        request.form["password"],
+
+        request.form["centre"],
+
+        request.form["joining_date"],
+
+        float(request.form["latitude"]),
+
+        float(request.form["longitude"]),
+
+        int(request.form["allowed_radius"]),
+
+        request.form.get("is_admin") == "on"
+    )
+
+    return redirect(
+        "/admin_employees"
+    )
+
+@app.route(
+    "/mark_employee_left/<int:employee_id>",
+    methods=["POST"]
+)
+def mark_employee_left_route(
+    employee_id
+):
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    mark_employee_left(
+
+        employee_id,
+
+        request.form["last_office_day"]
+    )
+
+    return redirect(
+        "/admin_employees"
+    )
+
+@app.route(
+    "/reactivate_employee/<int:employee_id>",
+    methods=["POST"]
+)
+def reactivate_employee_route(
+    employee_id
+):
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    reactivate_employee(
+        employee_id
+    )
+
+    return redirect(
+        "/admin_employees"
+    )
+
 @app.route(
     "/add_holiday",
     methods=["POST"]
 )
 def add_holiday_route():
+
+    if "employee_id" not in session:
+        return redirect("/")
 
     if not session.get("is_admin"):
         return "Access Denied"
@@ -449,11 +590,15 @@ def add_holiday_route():
     )
 
 @app.route(
-    "/deactivate_holiday/<int:holiday_id>"
+    "/deactivate_holiday/<int:holiday_id>",
+    methods=["POST"]
 )
 def deactivate_holiday_route(
     holiday_id
 ):
+
+    if "employee_id" not in session:
+        return redirect("/")
 
     if not session.get("is_admin"):
         return "Access Denied"
@@ -467,11 +612,15 @@ def deactivate_holiday_route(
     )
 
 @app.route(
-    "/activate_holiday/<int:holiday_id>"
+    "/activate_holiday/<int:holiday_id>",
+    methods=["POST"]
 )
 def activate_holiday_route(
     holiday_id
 ):
+
+    if "employee_id" not in session:
+        return redirect("/")
 
     if not session.get("is_admin"):
         return "Access Denied"
@@ -485,11 +634,15 @@ def activate_holiday_route(
     )
 
 @app.route(
-    "/approve_leave/<int:leave_id>"
+    "/approve_leave/<int:leave_id>",
+    methods=["POST"]
 )
 def approve_leave_route(
     leave_id
 ):
+
+    if "employee_id" not in session:
+        return redirect("/")
 
     if not session.get("is_admin"):
         return "Access Denied"
@@ -504,11 +657,18 @@ def approve_leave_route(
     )
 
 @app.route(
-    "/reject_leave/<int:leave_id>"
+    "/reject_leave/<int:leave_id>",
+    methods=["POST"]
 )
 def reject_leave_route(
     leave_id
 ):
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
 
     reject_leave(
         leave_id,
@@ -532,88 +692,33 @@ def my_leaves():
         employee_id
     )
 
-    employee = get_employee(
-        employee_id
-    )
-
     from datetime import date
-
-    joining_date = date.fromisoformat(
-        employee["joining_date"]
-    )
 
     today = date.today()
 
-    service_years = (
-        today - joining_date
-    ).days / 365
-
-    if service_years >= 1:
-
-        total_cl = 8
-        total_sl = 6
-
-    else:
-
-        total_cl = 6
-        total_sl = 6
-
-    # ADD THIS PART HERE
-    approved_cl = 0
-    
-    for leave in leaves:
-    
-        if (
-            leave["status"] == "Approved"
-            and leave["leave_type"] == "CL"
-        ):
-    
-            from_date = date.fromisoformat(
-                leave["from_date"]
-            )
-    
-            to_date = date.fromisoformat(
-                leave["to_date"]
-            )
-    
-            leave_days = (
-                to_date - from_date
-            ).days + 1
-    
-            approved_cl += leave_days
-
-    approved_sl = 0
-    
-    for leave in leaves:
-    
-        if (
-            leave["status"] == "Approved"
-            and leave["leave_type"] == "SL"
-        ):
-    
-            from_date = date.fromisoformat(
-                leave["from_date"]
-            )
-    
-            to_date = date.fromisoformat(
-                leave["to_date"]
-            )
-    
-            leave_days = (
-                to_date - from_date
-            ).days + 1
-    
-            approved_sl += leave_days
-
-    cl_remaining = (
-        total_cl
-        - approved_cl
+    balance = get_leave_balance(
+        employee_id
     )
 
-    sl_remaining = (
-        total_sl
-        - approved_sl
-    )
+    cl_remaining = balance[
+        "cl_remaining"
+    ]
+
+    sl_remaining = balance[
+        "sl_remaining"
+    ]
+
+    total_cl = balance[
+        "total_cl"
+    ]
+
+    total_sl = balance[
+        "total_sl"
+    ]
+
+    eligible_months = balance[
+        "eligible_months"
+    ]
 
     approved = 0
     
@@ -621,17 +726,10 @@ def my_leaves():
     
         if leave["status"] == "Approved":
     
-            from_date = date.fromisoformat(
-                leave["from_date"]
+            leave_days = get_leave_days_in_year(
+                leave,
+                today.year
             )
-    
-            to_date = date.fromisoformat(
-                leave["to_date"]
-            )
-    
-            leave_days = (
-                to_date - from_date
-            ).days + 1
     
             approved += leave_days
     pending = len([
@@ -664,7 +762,9 @@ def my_leaves():
     
         total_cl=total_cl,
     
-        total_sl=total_sl
+        total_sl=total_sl,
+
+        eligible_months=eligible_months
     )
 
 @app.route("/holidays")

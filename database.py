@@ -1,6 +1,7 @@
 
 from geopy.distance import geodesic
 import base64
+from math import ceil
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from supabase import create_client
@@ -490,7 +491,224 @@ def get_employee(
     return response.data[0]
 
 
+def get_employees():
+
+    response = (
+        supabase.table(
+            "employees"
+        )
+        .select("*")
+        .order(
+            "full_name"
+        )
+        .execute()
+    )
+
+    return response.data
+
+
+def add_employee(
+    full_name,
+    username,
+    password,
+    centre,
+    joining_date,
+    latitude,
+    longitude,
+    allowed_radius,
+    is_admin
+):
+
+    response = (
+        supabase.table(
+            "employees"
+        )
+        .insert({
+
+            "full_name": full_name,
+
+            "username": username,
+
+            "password": password,
+
+            "centre": centre,
+
+            "joining_date": joining_date,
+
+            "latitude": latitude,
+
+            "longitude": longitude,
+
+            "allowed_radius": allowed_radius,
+
+            "is_admin": is_admin,
+
+            "is_active": True
+
+        })
+        .execute()
+    )
+
+    return response
+
+
+def mark_employee_left(
+    employee_id,
+    last_office_day
+):
+
+    response = (
+        supabase.table(
+            "employees"
+        )
+        .update({
+
+            "is_active": False,
+
+            "last_office_day": last_office_day
+
+        })
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
+    )
+
+    return response
+
+
+def reactivate_employee(
+    employee_id
+):
+
+    response = (
+        supabase.table(
+            "employees"
+        )
+        .update({
+
+            "is_active": True,
+
+            "last_office_day": None
+
+        })
+        .eq(
+            "id",
+            employee_id
+        )
+        .execute()
+    )
+
+    return response
+
+
 from datetime import date
+
+
+def get_leave_entitlement(
+    employee,
+    as_of=None
+):
+
+    if as_of is None:
+        as_of = date.today()
+
+    joining_date = date.fromisoformat(
+        employee["joining_date"]
+    )
+
+    service_years = (
+        as_of - joining_date
+    ).days / 365
+
+    if service_years >= 1:
+
+        annual_cl = 8
+        annual_sl = 6
+
+    else:
+
+        annual_cl = 6
+        annual_sl = 6
+
+    if joining_date.year == as_of.year:
+
+        eligible_months = (
+            12 - joining_date.month + 1
+        )
+
+        total_cl = ceil(
+            annual_cl * eligible_months / 12
+        )
+
+        total_sl = ceil(
+            annual_sl * eligible_months / 12
+        )
+
+    else:
+
+        eligible_months = 12
+
+        total_cl = annual_cl
+        total_sl = annual_sl
+
+    return {
+
+        "annual_cl": annual_cl,
+
+        "annual_sl": annual_sl,
+
+        "eligible_months": eligible_months,
+
+        "total_cl": total_cl,
+
+        "total_sl": total_sl
+    }
+
+
+def get_leave_days_in_year(
+    leave,
+    year
+):
+
+    from_date = date.fromisoformat(
+        leave["from_date"]
+    )
+
+    to_date = date.fromisoformat(
+        leave["to_date"]
+    )
+
+    year_start = date(
+        year,
+        1,
+        1
+    )
+
+    year_end = date(
+        year,
+        12,
+        31
+    )
+
+    start = max(
+        from_date,
+        year_start
+    )
+
+    end = min(
+        to_date,
+        year_end
+    )
+
+    if end < start:
+
+        return 0
+
+    return (
+        end - start
+    ).days + 1
 
 
 def get_leave_balance(employee_id):
@@ -503,23 +721,20 @@ def get_leave_balance(employee_id):
         .data[0]
     )
 
-    joining_date = date.fromisoformat(
-        employee["joining_date"]
+    today = date.today()
+
+    entitlement = get_leave_entitlement(
+        employee,
+        today
     )
 
-    service_years = (
-        date.today() - joining_date
-    ).days / 365
+    total_cl = entitlement[
+        "total_cl"
+    ]
 
-    if service_years >= 1:
-
-        total_cl = 8
-        total_sl = 6
-
-    else:
-
-        total_cl = 6
-        total_sl = 6
+    total_sl = entitlement[
+        "total_sl"
+    ]
 
     leaves = (
         supabase.table("leave_requests")
@@ -535,17 +750,10 @@ def get_leave_balance(employee_id):
 
     for leave in leaves:
 
-        from_date = date.fromisoformat(
-            leave["from_date"]
+        leave_days = get_leave_days_in_year(
+            leave,
+            today.year
         )
-
-        to_date = date.fromisoformat(
-            leave["to_date"]
-        )
-
-        leave_days = (
-            to_date - from_date
-        ).days + 1
 
         if leave["leave_type"] == "CL":
 
@@ -556,6 +764,21 @@ def get_leave_balance(employee_id):
             approved_sl += leave_days
 
     return {
+
+        "total_cl":
+            total_cl,
+
+        "total_sl":
+            total_sl,
+
+        "approved_cl":
+            approved_cl,
+
+        "approved_sl":
+            approved_sl,
+
+        "eligible_months":
+            entitlement["eligible_months"],
 
         "cl_remaining":
             total_cl - approved_cl,
