@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Attendance Report</title>
+</head>
+<body>
+
+<h2>Attendance Report</h2>
+
+<a href="/dashboard">Back to Dashboard</a>
+
+<br><br>
+
+<form method="GET" action="/admin_attendance">
+
+    <label>
+        From Date:
+        <input
+            type="date"
+            name="from_date"
+            value="{{ from_date or '' }}"
+        >
+    </label>
+
+    &nbsp;&nbsp;
+
+    <label>
+        To Date:
+        <input
+            type="date"
+            name="to_date"
+            value="{{ to_date or '' }}"
+        >
+    </label>
+
+    &nbsp;&nbsp;
+
+    <button type="submit">
+        Search
+    </button>
+
+</form>
+
+<br><br>
+
+<table border="1" cellpadding="5">
+
+<tr>
+    <th>Date</th>
+    <th>Employee</th>
+    <th>Centre</th>
+    <th>Punch In</th>
+    <th>Punch Out</th>
+    <th>Total Hours</th>
+</tr>
+
+{% for row in attendance %}
+
+<tr>
+
+    <td>{{ row.attendance_date }}</td>
+
+    <td>{{ row.employees.full_name }}</td>
+
+    <td>{{ row.employees.centre }}</td>
+
+    <td>{{ row.punch_in }}</td>
+
+    <td>{{ row.punch_out }}</td>
+
+    <td>{{ row.total_hours }}</td>
+
+</tr>
+
+{% endfor %}
+
+</table>
+
+</body>
+</html>

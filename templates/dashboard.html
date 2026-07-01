@@ -70,6 +70,44 @@
         <p id="status" class="status-message"></p>
     </div>
 </section>
+
+
+{% if session.get("is_admin") %}
+
+<section class="attendance-panel">
+
+    <h3>Admin Panel</h3>
+
+    <p>
+        <a href="/admin_attendance">
+            Attendance Reports
+        </a>
+    </p>
+
+    <p>
+        <a href="/admin_employees">
+            Employee Management
+        </a>
+    </p>
+
+    <p>
+        <a href="/admin_leaves">
+            Leave Requests
+        </a>
+    </p>
+
+    <p>
+        <a href="/admin_holidays">
+            Holiday Management
+        </a>
+    </p>
+
+</section>
+
+{% endif %}
+
+
+
 {% endblock %}
 
 {% block scripts %}

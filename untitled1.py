@@ -21,7 +21,6 @@ add_holiday(
 
 
 """
-
 COMPANY_HOLIDAYS_2026 = {
     "2026-01-01": "New year's Eve",
     "2026-01-26": "Republic Day",
@@ -33,10 +32,11 @@ COMPANY_HOLIDAYS_2026 = {
     "2026-09-25": "Anant Chaturdashi",
     "2026-09-26": "Anant Chaturdashi next day",
     "2026-10-02": "Gandhi Jayanti",
-    "2026-20-20": "Dassra",
+    "2026-10-20": "Dassra",
     "2026-11-09": "Diwali",
     "2026-11-10": "Diwali Padwa",
     "2026-11-11": "Bhaubij",
     "2026-12-25": "Christmas",
     "2026-12-31": "New Year's Eve"
-}"""
+}
+"""

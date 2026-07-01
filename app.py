@@ -42,6 +42,7 @@ from database import (
     deactivate_holiday,
     activate_holiday,
     get_active_holidays,
+    get_attendance_report
 )
 
 app = Flask(__name__)
@@ -782,6 +783,37 @@ def holidays():
 
         holidays=holidays
     )
+
+@app.route("/admin_attendance")
+def admin_attendance():
+
+    if "employee_id" not in session:
+        return redirect("/")
+
+    if not session.get("is_admin"):
+        return "Access Denied"
+
+    from_date = request.args.get(
+    "from_date"
+    )
+    
+    to_date = request.args.get(
+        "to_date"
+    )
+    
+    attendance = get_attendance_report(
+        from_date,
+        to_date
+    )
+
+    return render_template(
+        "admin_attendance.html",
+        attendance=attendance,
+        from_date=from_date,
+        to_date=to_date
+    )
+
+
 if __name__ == "__main__":
     app.run(
         debug=True,

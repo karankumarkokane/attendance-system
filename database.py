@@ -906,3 +906,40 @@ def activate_holiday(
     )
 
     return response
+
+def get_attendance_report(
+    from_date=None,
+    to_date=None
+):
+
+    query = (
+        supabase.table(
+            "attendance"
+        )
+        .select(
+            "*, employees(full_name, centre)"
+        )
+    )
+
+    if from_date:
+        query = query.gte(
+            "attendance_date",
+            from_date
+        )
+
+    if to_date:
+        query = query.lte(
+            "attendance_date",
+            to_date
+        )
+
+    response = (
+        query
+        .order(
+            "attendance_date",
+            desc=True
+        )
+        .execute()
+    )
+
+    return response.data
