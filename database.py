@@ -1015,3 +1015,35 @@ def resolve_payroll_day(employee_id, attendance_date, resolution):
         )
     values.update({"employee_id": employee_id, "attendance_date": attendance_date})
     return supabase.table("attendance").insert(values).execute()
+
+
+def save_salary_slip(values):
+    existing = (
+        supabase.table("salary_slips").select("id")
+        .eq("employee_id", values["employee_id"])
+        .eq("payroll_month", values["payroll_month"])
+        .execute().data
+    )
+    if existing:
+        return (
+            supabase.table("salary_slips").update(values)
+            .eq("id", existing[0]["id"]).execute().data[0]
+        )
+    return supabase.table("salary_slips").insert(values).execute().data[0]
+
+
+def get_employee_salary_slips(employee_id):
+    return (
+        supabase.table("salary_slips").select("*")
+        .eq("employee_id", employee_id)
+        .order("payroll_month", desc=True).execute().data
+    )
+
+
+def get_salary_slip(slip_id):
+    response = (
+        supabase.table("salary_slips")
+        .select("*, employees(full_name, centre)")
+        .eq("id", slip_id).execute().data
+    )
+    return response[0] if response else None

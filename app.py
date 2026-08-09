@@ -6,7 +6,8 @@ from flask import (
     render_template,
     request,
     redirect,
-    session
+    session,
+    send_file
 )
 
 import os
@@ -46,9 +47,13 @@ from database import (
     get_attendance_report,
     get_payroll_source_data,
     update_employee_salary,
-    resolve_payroll_day
+    resolve_payroll_day,
+    save_salary_slip,
+    get_employee_salary_slips,
+    get_salary_slip
 )
 from payroll import build_monthly_payroll
+from salary_pdf import create_salary_slip_pdf
 
 app = Flask(__name__)
 app.secret_key = os.getenv(
@@ -880,6 +885,75 @@ def resolve_payroll_day_route():
     except (KeyError, TypeError, ValueError):
         return "Invalid attendance correction", 400
     return redirect("/admin_payroll?month=" + request.form.get("month", ""))
+
+
+@app.route("/finalize_salary_slip/<int:employee_id>", methods=["POST"])
+def finalize_salary_slip(employee_id):
+    if "employee_id" not in session:
+        return redirect("/")
+    if not session.get("is_admin"):
+        return "Access Denied", 403
+    try:
+        month_value = request.form["month"]
+        year, month = (int(part) for part in month_value.split("-"))
+        month_start = date(year, month, 1)
+        month_end = date(year, month, calendar.monthrange(year, month)[1])
+        if month_end >= date.today():
+            return "Salary slips can only be saved after the month has ended", 400
+    except (KeyError, TypeError, ValueError):
+        return "Invalid payroll month", 400
+    employees, attendance, leaves, holidays = get_payroll_source_data(
+        month_start.isoformat(), month_end.isoformat()
+    )
+    payroll = build_monthly_payroll(year, month, employees, attendance, leaves, holidays)
+    slip = next((item for item in payroll if str(item["employee"]["id"]) == str(employee_id)), None)
+    if not slip:
+        return "Employee is not eligible for this payroll month", 404
+    if not slip["can_finalize"]:
+        return "Resolve all missing attendance and salary warnings before saving this slip", 400
+    save_salary_slip({
+        "employee_id": employee_id,
+        "payroll_month": month_start.isoformat(),
+        "gross_salary": float(slip["monthly_salary"]),
+        "working_days": slip["working_days"],
+        "present_days": slip["present_days"],
+        "cl_days": slip["cl_days"],
+        "sl_days": slip["sl_days"],
+        "paid_leave_days": slip["paid_leave_days"],
+        "half_days": slip["half_days"],
+        "unpaid_days": float(slip["deduction_days"]),
+        "deduction": float(slip["deduction"]),
+        "net_salary": float(slip["net_salary"]),
+        "leave_details": slip["approved_leave_details"],
+        "generated_by": session["employee_id"],
+    })
+    return redirect(f"/admin_payroll?month={month_value}&saved=1")
+
+
+@app.route("/my_salary_slips")
+def my_salary_slips():
+    if "employee_id" not in session:
+        return redirect("/")
+    slips = get_employee_salary_slips(session["employee_id"])
+    return render_template("my_salary_slips.html", slips=slips)
+
+
+@app.route("/salary_slip/<int:slip_id>/download")
+def download_salary_slip(slip_id):
+    if "employee_id" not in session:
+        return redirect("/")
+    slip = get_salary_slip(slip_id)
+    if not slip:
+        return "Salary slip not found", 404
+    if not session.get("is_admin") and str(slip["employee_id"]) != str(session["employee_id"]):
+        return "Access Denied", 403
+    pdf = create_salary_slip_pdf(slip)
+    return send_file(
+        pdf,
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"salary-slip-{slip['payroll_month']}.pdf",
+    )
 
 
 if __name__ == "__main__":

@@ -122,5 +122,10 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
             summary["warnings"].append("Punch-in or punch-out is missing")
         if summary["half_days"]:
             summary["warnings"].append("Less than 5 hours recorded (half-day)")
+        summary["can_finalize"] = bool(
+            salary > 0
+            and not summary["unauthorized_absences"]
+            and not summary["missing_punches"]
+        )
         payroll.append(summary)
     return payroll

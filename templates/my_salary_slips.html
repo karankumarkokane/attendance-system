@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}My Salary Slips{% endblock %}
+{% block page_title %}My Salary Slips{% endblock %}
+{% block content %}
+<section class="panel">
+<div class="table-wrap"><table><thead><tr><th>Month</th><th>Gross Salary</th><th>Deduction</th><th>Net Salary</th><th>Download</th></tr></thead><tbody>
+{% for slip in slips %}<tr><td>{{ slip.payroll_month }}</td><td>₹ {{ '%.2f'|format(slip.gross_salary|float) }}</td><td>₹ {{ '%.2f'|format(slip.deduction|float) }}</td><td><strong>₹ {{ '%.2f'|format(slip.net_salary|float) }}</strong></td><td><a class="button" href="/salary_slip/{{ slip.id }}/download">Download PDF</a></td></tr>
+{% else %}<tr><td colspan="5" class="empty-state">No finalized salary slips are available yet.</td></tr>{% endfor %}
+</tbody></table></div>
+</section>
+{% endblock %}
