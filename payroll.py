@@ -22,7 +22,7 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
     }
     attendance_by_employee = {}
     for row in attendance:
-        attendance_by_employee.setdefault(row["employee_id"], {})[
+        attendance_by_employee.setdefault(str(row["employee_id"]), {})[
             _as_date(row["attendance_date"])
         ] = row
 
@@ -34,7 +34,9 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
         end = min(_as_date(row["to_date"]), month_end)
         current = start
         while current <= end:
-            approved_leave_dates.setdefault(row["employee_id"], set()).add(current)
+            approved_leave_dates.setdefault(str(row["employee_id"]), {})[current] = (
+                row.get("leave_type") or "Other"
+            )
             current += timedelta(days=1)
 
     payroll = []
@@ -51,14 +53,18 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
             "working_days": 0,
             "present_days": 0,
             "paid_leave_days": 0,
+            "cl_days": 0,
+            "sl_days": 0,
+            "approved_leave_details": [],
             "half_days": 0,
             "unauthorized_absences": [],
             "missing_punches": [],
             "warnings": [],
             "resolved_unpaid_leave_days": 0,
         }
-        employee_attendance = attendance_by_employee.get(employee["id"], {})
-        employee_leaves = approved_leave_dates.get(employee["id"], set())
+        employee_key = str(employee["id"])
+        employee_attendance = attendance_by_employee.get(employee_key, {})
+        employee_leaves = approved_leave_dates.get(employee_key, {})
         current = active_start
         while current <= active_end:
             if current.weekday() == 6 or current in holiday_dates:
@@ -68,6 +74,15 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
             row = employee_attendance.get(current)
             if current in employee_leaves:
                 summary["paid_leave_days"] += 1
+                leave_type = employee_leaves[current]
+                if leave_type == "CL":
+                    summary["cl_days"] += 1
+                elif leave_type == "SL":
+                    summary["sl_days"] += 1
+                summary["approved_leave_details"].append({
+                    "date": current.isoformat(),
+                    "leave_type": leave_type,
+                })
             elif row is None:
                 summary["unauthorized_absences"].append(current.isoformat())
             elif row.get("status") == "Admin Full Day":
