@@ -943,3 +943,49 @@ def get_attendance_report(
     )
 
     return response.data
+
+
+def get_payroll_source_data(from_date, to_date):
+    employees = (
+        supabase.table("employees")
+        .select("*")
+        .lte("joining_date", to_date)
+        .order("full_name")
+        .execute()
+        .data
+    )
+    attendance = (
+        supabase.table("attendance")
+        .select("*")
+        .gte("attendance_date", from_date)
+        .lte("attendance_date", to_date)
+        .execute()
+        .data
+    )
+    leaves = (
+        supabase.table("leave_requests")
+        .select("*")
+        .lte("from_date", to_date)
+        .gte("to_date", from_date)
+        .execute()
+        .data
+    )
+    holidays = (
+        supabase.table("holidays")
+        .select("*")
+        .eq("is_active", True)
+        .gte("holiday_date", from_date)
+        .lte("holiday_date", to_date)
+        .execute()
+        .data
+    )
+    return employees, attendance, leaves, holidays
+
+
+def update_employee_salary(employee_id, monthly_salary):
+    return (
+        supabase.table("employees")
+        .update({"salary": monthly_salary})
+        .eq("id", employee_id)
+        .execute()
+    )

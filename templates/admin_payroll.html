@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Monthly Payroll{% endblock %}
+{% block page_title %}Salary Slips — {{ month_label }}{% endblock %}
+{% block content %}
+<section class="panel no-print">
+<form method="GET" action="/admin_payroll" class="button-row"><label>Payroll month <input type="month" name="month" value="{{ month }}" required></label><button type="submit">Review payroll</button><a class="button secondary" href="/admin_payroll?month={{ month }}&print=1" {% if has_warnings %}onclick="return confirm('Some employees have payroll warnings. Review the highlighted dates before continuing. Generate slips anyway?')"{% endif %}>Generate printable slips</a></form>
+<p class="muted">Sundays and active holidays are excluded. Approved leave is paid. Absences and missing punches deduct one day; days under 5 hours deduct half a day.</p>
+</section>
+{% for slip in payroll %}
+<section class="panel salary-slip">
+<div class="slip-heading"><div><p class="eyebrow">Salary slip</p><h2>{{ slip.employee.full_name }}</h2></div><div><strong>{{ month_label }}</strong><br><span class="muted">{{ slip.employee.centre }}</span></div></div>
+{% if slip.warnings %}<div class="warning-box"><strong>Review required</strong><ul>{% for warning in slip.warnings %}<li>{{ warning }}</li>{% endfor %}</ul>{% if slip.unauthorized_absences %}<div>Unapproved absence: {{ slip.unauthorized_absences|join(', ') }}</div>{% endif %}{% if slip.missing_punches %}<div>Missing punch: {{ slip.missing_punches|join(', ') }}</div>{% endif %}</div>{% endif %}
+<div class="summary-grid"><div class="stat-card"><span>Working days</span><strong>{{ slip.working_days }}</strong></div><div class="stat-card"><span>Full present</span><strong>{{ slip.present_days }}</strong></div><div class="stat-card"><span>Approved leave</span><strong>{{ slip.paid_leave_days }}</strong></div><div class="stat-card"><span>Half-days</span><strong>{{ slip.half_days }}</strong></div></div>
+<table class="salary-table"><tr><th>Monthly salary</th><td>₹ {{ '%.2f'|format(slip.monthly_salary) }}</td></tr><tr><th>Deduction ({{ slip.deduction_days }} day units)</th><td>₹ {{ '%.2f'|format(slip.deduction) }}</td></tr><tr><th>Net payable</th><td><strong>₹ {{ '%.2f'|format(slip.net_salary) }}</strong></td></tr></table>
+<form class="button-row no-print" method="POST" action="/update_employee_salary/{{ slip.employee.id }}"><input type="hidden" name="month" value="{{ month }}"><label>Gross monthly salary <input class="compact-input" type="number" min="0" step="0.01" name="monthly_salary" value="{{ slip.monthly_salary }}" required></label><button type="submit">Save salary</button></form>
+</section>
+{% else %}<section class="panel empty-state">No employees were employed during this month.</section>{% endfor %}
+{% endblock %}
+{% block scripts %}{% if print_mode %}<script>window.addEventListener("load", () => window.print());</script>{% endif %}{% endblock %}

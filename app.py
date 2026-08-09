@@ -12,7 +12,8 @@ from flask import (
 import os
 
 
-from datetime import date
+from datetime import date, timedelta
+import calendar
 from database import (
     supabase,
     login_employee,
@@ -42,8 +43,11 @@ from database import (
     deactivate_holiday,
     activate_holiday,
     get_active_holidays,
-    get_attendance_report
+    get_attendance_report,
+    get_payroll_source_data,
+    update_employee_salary
 )
+from payroll import build_monthly_payroll
 
 app = Flask(__name__)
 app.secret_key = os.getenv(
@@ -812,6 +816,51 @@ def admin_attendance():
         from_date=from_date,
         to_date=to_date
     )
+
+
+@app.route("/admin_payroll")
+def admin_payroll():
+    if "employee_id" not in session:
+        return redirect("/")
+    if not session.get("is_admin"):
+        return "Access Denied", 403
+
+    default_month = date.today().replace(day=1) - timedelta(days=1)
+    month_value = request.args.get("month", default_month.strftime("%Y-%m"))
+    try:
+        year, month = (int(part) for part in month_value.split("-"))
+        month_start = date(year, month, 1)
+    except (TypeError, ValueError):
+        return "Invalid payroll month", 400
+    month_end = date(year, month, calendar.monthrange(year, month)[1])
+    if month_end >= date.today():
+        return "Salary slips can only be generated after the selected month has ended", 400
+    employees, attendance, leaves, holidays = get_payroll_source_data(
+        month_start.isoformat(), month_end.isoformat()
+    )
+    payroll = build_monthly_payroll(year, month, employees, attendance, leaves, holidays)
+    return render_template(
+        "admin_payroll.html", payroll=payroll, month=month_value,
+        month_label=month_start.strftime("%B %Y"),
+        has_warnings=any(item["warnings"] for item in payroll),
+        print_mode=request.args.get("print") == "1",
+    )
+
+
+@app.route("/update_employee_salary/<int:employee_id>", methods=["POST"])
+def update_employee_salary_route(employee_id):
+    if "employee_id" not in session:
+        return redirect("/")
+    if not session.get("is_admin"):
+        return "Access Denied", 403
+    try:
+        monthly_salary = round(float(request.form["monthly_salary"]), 2)
+        if monthly_salary < 0:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return "Monthly salary must be a non-negative number", 400
+    update_employee_salary(employee_id, monthly_salary)
+    return redirect("/admin_payroll?month=" + request.form.get("month", ""))
 
 
 if __name__ == "__main__":
