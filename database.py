@@ -1044,7 +1044,7 @@ def get_salary_slip(slip_id):
     response = (
         supabase.table("salary_slips")
         .select(
-            "*, employees!salary_slips_employee_id_fkey(full_name, centre)"
+            "*, employees!salary_slips_employee_id_fkey(full_name, designation, centre)"
         )
         .eq("id", slip_id).execute().data
     )

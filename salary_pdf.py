@@ -5,18 +5,32 @@ def create_salary_slip_pdf(slip):
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
+    from reportlab.lib.styles import ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 
     output = BytesIO()
     doc = SimpleDocTemplate(output, pagesize=A4, rightMargin=18*mm, leftMargin=18*mm, topMargin=18*mm, bottomMargin=18*mm)
     styles = getSampleStyleSheet()
+    gst_style = ParagraphStyle(
+        "GSTIN", parent=styles["BodyText"], alignment=TA_CENTER,
+        fontName="Helvetica-Bold", fontSize=10, textColor=colors.HexColor("#475569")
+    )
+    slip_title_style = ParagraphStyle(
+        "SlipTitle", parent=styles["Heading1"], alignment=TA_CENTER
+    )
     employee = slip.get("employees") or {}
     month = str(slip["payroll_month"])[:7]
     story = [
-        Paragraph("SALARY SLIP", styles["Title"]),
-        Spacer(1, 5*mm),
+        Paragraph("K &amp; K Learning Solutions", styles["Title"]),
+        Paragraph("GSTIN: 27AATFK3684R2Z3", gst_style),
+        Spacer(1, 4*mm),
+        Paragraph("SALARY SLIP", slip_title_style),
+        Spacer(1, 4*mm),
         Paragraph(f"<b>Employee:</b> {employee.get('full_name', '')}", styles["BodyText"]),
+        Paragraph(f"<b>Employee ID:</b> {slip.get('employee_id', '')}", styles["BodyText"]),
+        Paragraph(f"<b>Designation:</b> {employee.get('designation') or '-'}", styles["BodyText"]),
         Paragraph(f"<b>Centre:</b> {employee.get('centre', '')}", styles["BodyText"]),
         Paragraph(f"<b>Payroll month:</b> {month}", styles["BodyText"]),
         Spacer(1, 6*mm),
