@@ -50,10 +50,12 @@ from database import (
     resolve_payroll_day,
     save_salary_slip,
     get_employee_salary_slips,
-    get_salary_slip
+    get_salary_slip,
+    get_employee_month_attendance
 )
 from payroll import build_monthly_payroll
 from salary_pdf import create_salary_slip_pdf
+from attendance_history import build_attendance_history
 
 app = Flask(__name__)
 app.secret_key = os.getenv(
@@ -953,6 +955,30 @@ def download_salary_slip(slip_id):
         mimetype="application/pdf",
         as_attachment=True,
         download_name=f"salary-slip-{slip['payroll_month']}.pdf",
+    )
+
+
+@app.route("/my_attendance")
+def my_attendance():
+    if "employee_id" not in session:
+        return redirect("/")
+    month_value = request.args.get("month", date.today().strftime("%Y-%m"))
+    try:
+        year, month = (int(part) for part in month_value.split("-"))
+        month_start = date(year, month, 1)
+    except (TypeError, ValueError):
+        return "Invalid attendance month", 400
+    if month_start > date.today().replace(day=1):
+        return "Future attendance months are not available", 400
+    month_end = date(year, month, calendar.monthrange(year, month)[1])
+    attendance, leaves, holidays = get_employee_month_attendance(
+        session["employee_id"], month_start.isoformat(), month_end.isoformat()
+    )
+    days = build_attendance_history(year, month, attendance, leaves, holidays)
+    return render_template(
+        "my_attendance.html", days=days, month=month_value,
+        month_label=month_start.strftime("%B %Y"),
+        now_month=date.today().strftime("%Y-%m"),
     )
 
 

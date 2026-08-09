@@ -1049,3 +1049,27 @@ def get_salary_slip(slip_id):
         .eq("id", slip_id).execute().data
     )
     return response[0] if response else None
+
+
+def get_employee_month_attendance(employee_id, from_date, to_date):
+    attendance = (
+        supabase.table("attendance").select("*")
+        .eq("employee_id", employee_id)
+        .gte("attendance_date", from_date)
+        .lte("attendance_date", to_date)
+        .order("attendance_date").execute().data
+    )
+    leaves = (
+        supabase.table("leave_requests").select("*")
+        .eq("employee_id", employee_id)
+        .eq("status", "Approved")
+        .lte("from_date", to_date)
+        .gte("to_date", from_date).execute().data
+    )
+    holidays = (
+        supabase.table("holidays").select("*")
+        .eq("is_active", True)
+        .gte("holiday_date", from_date)
+        .lte("holiday_date", to_date).execute().data
+    )
+    return attendance, leaves, holidays
