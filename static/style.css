@@ -348,6 +348,8 @@ th {
 .slip-heading { display: flex; justify-content: space-between; gap: 18px; margin-bottom: 18px; }
 .warning-box { margin-bottom: 18px; padding: 14px; border: 1px solid #f0b429; border-radius: 8px; background: #fff8e1; color: #7a4d00; }
 .warning-box ul { margin: 8px 0; }
+.resolution-row { display: grid; grid-template-columns: 1fr 180px auto; align-items: center; gap: 10px; margin-top: 10px; }
+.resolution-row select, .resolution-row button { padding: 8px 10px; }
 .salary-table { min-width: 0; margin-bottom: 18px; }
 
 @media print {
@@ -363,6 +365,7 @@ th {
 }
 
 @media (max-width: 760px) {
+    .resolution-row { grid-template-columns: 1fr; }
     .topbar {
         align-items: flex-start;
         flex-direction: column;

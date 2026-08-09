@@ -989,3 +989,29 @@ def update_employee_salary(employee_id, monthly_salary):
         .eq("id", employee_id)
         .execute()
     )
+
+
+def resolve_payroll_day(employee_id, attendance_date, resolution):
+    status_map = {
+        "full_day": ("Admin Full Day", 8),
+        "half_day": ("Admin Half Day", 4),
+        "paid_leave": ("Admin Paid Leave", 0),
+        "unpaid_leave": ("Admin Unpaid Leave", 0),
+    }
+    if resolution not in status_map:
+        raise ValueError("Invalid payroll resolution")
+    status, total_hours = status_map[resolution]
+    existing = (
+        supabase.table("attendance").select("id")
+        .eq("employee_id", employee_id)
+        .eq("attendance_date", attendance_date)
+        .execute().data
+    )
+    values = {"status": status, "total_hours": total_hours}
+    if existing:
+        return (
+            supabase.table("attendance").update(values)
+            .eq("id", existing[0]["id"]).execute()
+        )
+    values.update({"employee_id": employee_id, "attendance_date": attendance_date})
+    return supabase.table("attendance").insert(values).execute()

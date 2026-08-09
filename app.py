@@ -45,7 +45,8 @@ from database import (
     get_active_holidays,
     get_attendance_report,
     get_payroll_source_data,
-    update_employee_salary
+    update_employee_salary,
+    resolve_payroll_day
 )
 from payroll import build_monthly_payroll
 
@@ -860,6 +861,24 @@ def update_employee_salary_route(employee_id):
     except (KeyError, TypeError, ValueError):
         return "Monthly salary must be a non-negative number", 400
     update_employee_salary(employee_id, monthly_salary)
+    return redirect("/admin_payroll?month=" + request.form.get("month", ""))
+
+
+@app.route("/resolve_payroll_day", methods=["POST"])
+def resolve_payroll_day_route():
+    if "employee_id" not in session:
+        return redirect("/")
+    if not session.get("is_admin"):
+        return "Access Denied", 403
+    try:
+        employee_id = int(request.form["employee_id"])
+        attendance_date = date.fromisoformat(request.form["attendance_date"])
+        resolution = request.form["resolution"]
+        if attendance_date >= date.today():
+            return "Only past attendance dates can be corrected", 400
+        resolve_payroll_day(employee_id, attendance_date.isoformat(), resolution)
+    except (KeyError, TypeError, ValueError):
+        return "Invalid attendance correction", 400
     return redirect("/admin_payroll?month=" + request.form.get("month", ""))
 
 

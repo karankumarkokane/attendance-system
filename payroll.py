@@ -55,6 +55,7 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
             "unauthorized_absences": [],
             "missing_punches": [],
             "warnings": [],
+            "resolved_unpaid_leave_days": 0,
         }
         employee_attendance = attendance_by_employee.get(employee["id"], {})
         employee_leaves = approved_leave_dates.get(employee["id"], set())
@@ -69,6 +70,14 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
                 summary["paid_leave_days"] += 1
             elif row is None:
                 summary["unauthorized_absences"].append(current.isoformat())
+            elif row.get("status") == "Admin Full Day":
+                summary["present_days"] += 1
+            elif row.get("status") == "Admin Half Day":
+                summary["half_days"] += 1
+            elif row.get("status") == "Admin Paid Leave":
+                summary["paid_leave_days"] += 1
+            elif row.get("status") == "Admin Unpaid Leave":
+                summary["resolved_unpaid_leave_days"] += 1
             elif not row.get("punch_in") or not row.get("punch_out"):
                 summary["missing_punches"].append(current.isoformat())
             elif float(row.get("total_hours") or 0) < 5:
@@ -79,7 +88,11 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
 
         salary = _money(employee.get("salary", employee.get("monthly_salary")))
         day_rate = salary / summary["working_days"] if summary["working_days"] else Decimal("0")
-        deduction_units = Decimal(len(summary["unauthorized_absences"]) + len(summary["missing_punches"]))
+        deduction_units = Decimal(
+            len(summary["unauthorized_absences"])
+            + len(summary["missing_punches"])
+            + summary["resolved_unpaid_leave_days"]
+        )
         deduction_units += Decimal(summary["half_days"]) * Decimal("0.5")
         deduction = _money(day_rate * deduction_units)
         summary["monthly_salary"] = salary
