@@ -353,6 +353,11 @@ th {
 .resolution-row { display: grid; grid-template-columns: 1fr 180px auto; align-items: center; gap: 10px; margin-top: 10px; }
 .resolution-row select, .resolution-row button { padding: 8px 10px; }
 .salary-table { min-width: 0; margin-bottom: 18px; }
+.generation-status { display: inline-block; margin-top: 8px; padding: 5px 9px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.generation-status.generated { background: #dcfce7; color: var(--success); }
+.generation-status.not-generated { background: #fee2e2; color: var(--danger); }
+.saved-slip-info { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 18px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: #f8fafc; }
+.save-confirmation { margin: 0 0 20px; padding: 12px 16px; border-radius: 8px; background: #dcfce7; color: var(--success); font-weight: 700; }
 .leave-breakdown { margin: 0 0 18px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; }
 .leave-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .leave-tag { padding: 6px 9px; border-radius: 999px; background: #eef4ff; color: var(--primary-dark); font-size: 13px; font-weight: 700; }

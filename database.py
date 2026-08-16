@@ -1040,6 +1040,15 @@ def get_employee_salary_slips(employee_id):
     )
 
 
+def get_salary_slips_for_month(payroll_month):
+    return (
+        supabase.table("salary_slips")
+        .select("id, employee_id, payroll_month, net_salary, generated_at")
+        .eq("payroll_month", payroll_month)
+        .execute().data
+    )
+
+
 def get_salary_slip(slip_id):
     response = (
         supabase.table("salary_slips")

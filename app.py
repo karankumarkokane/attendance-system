@@ -50,6 +50,7 @@ from database import (
     resolve_payroll_day,
     save_salary_slip,
     get_employee_salary_slips,
+    get_salary_slips_for_month,
     get_salary_slip,
     get_employee_month_attendance
 )
@@ -847,11 +848,16 @@ def admin_payroll():
         month_start.isoformat(), month_end.isoformat()
     )
     payroll = build_monthly_payroll(year, month, employees, attendance, leaves, holidays)
+    saved_slips = get_salary_slips_for_month(month_start.isoformat())
+    saved_by_employee = {str(item["employee_id"]): item for item in saved_slips}
+    for item in payroll:
+        item["saved_slip"] = saved_by_employee.get(str(item["employee"]["id"]))
     return render_template(
         "admin_payroll.html", payroll=payroll, month=month_value,
         month_label=month_start.strftime("%B %Y"),
         has_warnings=any(item["warnings"] for item in payroll),
         print_mode=request.args.get("print") == "1",
+        saved=request.args.get("saved") == "1",
     )
 
 
