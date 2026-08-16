@@ -916,7 +916,9 @@ def finalize_salary_slip(employee_id):
     save_salary_slip({
         "employee_id": employee_id,
         "payroll_month": month_start.isoformat(),
-        "gross_salary": float(slip["monthly_salary"]),
+        "standard_salary": float(slip["monthly_salary"]),
+        "gross_salary": float(slip["prorated_gross"]),
+        "month_working_days": slip["month_working_days"],
         "working_days": slip["working_days"],
         "present_days": slip["present_days"],
         "cl_days": slip["cl_days"],

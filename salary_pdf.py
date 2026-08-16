@@ -36,11 +36,13 @@ def create_salary_slip_pdf(slip):
         Spacer(1, 6*mm),
     ]
     rows = [
-        ["Working days", slip["working_days"]], ["Present days", slip["present_days"]],
+        ["Month working days", slip.get("month_working_days", slip["working_days"])],
+        ["Eligible working days", slip["working_days"]], ["Present days", slip["present_days"]],
         ["CL taken", slip["cl_days"]], ["SL taken", slip["sl_days"]],
         ["Paid leave days", slip["paid_leave_days"]], ["Half-days", slip["half_days"]],
         ["Unpaid day units", slip["unpaid_days"]],
-        ["Gross salary (INR)", f"{float(slip['gross_salary']):,.2f}"],
+        ["Standard monthly salary (INR)", f"{float(slip.get('standard_salary') or slip['gross_salary']):,.2f}"],
+        ["Prorated gross salary (INR)", f"{float(slip['gross_salary']):,.2f}"],
         ["Deduction (INR)", f"{float(slip['deduction']):,.2f}"],
         ["NET PAYABLE (INR)", f"{float(slip['net_salary']):,.2f}"],
     ]

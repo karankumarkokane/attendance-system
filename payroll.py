@@ -20,6 +20,12 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
         for row in holidays
         if row.get("is_active", True)
     }
+    month_working_days = 0
+    current = month_start
+    while current <= month_end:
+        if current.weekday() != 6 and current not in holiday_dates:
+            month_working_days += 1
+        current += timedelta(days=1)
     attendance_by_employee = {}
     for row in attendance:
         attendance_by_employee.setdefault(str(row["employee_id"]), {})[
@@ -102,7 +108,8 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
             current += timedelta(days=1)
 
         salary = _money(employee.get("salary", employee.get("monthly_salary")))
-        day_rate = salary / summary["working_days"] if summary["working_days"] else Decimal("0")
+        day_rate = salary / month_working_days if month_working_days else Decimal("0")
+        prorated_gross = _money(day_rate * summary["working_days"])
         deduction_units = Decimal(
             len(summary["unauthorized_absences"])
             + len(summary["missing_punches"])
@@ -111,9 +118,11 @@ def build_monthly_payroll(year, month, employees, attendance, leaves, holidays):
         deduction_units += Decimal(summary["half_days"]) * Decimal("0.5")
         deduction = _money(day_rate * deduction_units)
         summary["monthly_salary"] = salary
+        summary["month_working_days"] = month_working_days
+        summary["prorated_gross"] = prorated_gross
         summary["deduction_days"] = deduction_units
         summary["deduction"] = deduction
-        summary["net_salary"] = _money(max(Decimal("0"), salary - deduction))
+        summary["net_salary"] = _money(max(Decimal("0"), prorated_gross - deduction))
         if salary <= 0:
             summary["warnings"].append("Monthly salary has not been set")
         if summary["unauthorized_absences"]:
