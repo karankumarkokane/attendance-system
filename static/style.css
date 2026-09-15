@@ -244,6 +244,15 @@ button.danger {
     flex-wrap: wrap;
 }
 
+.employee-upgrade-form {
+    display: grid;
+    grid-template-columns: 150px 120px 145px auto;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.employee-upgrade-form input { padding: 8px 10px; }
+
 .attendance-panel {
     display: grid;
     grid-template-columns: minmax(260px, 380px) 1fr;
@@ -376,6 +385,7 @@ th {
 
 @media (max-width: 760px) {
     .resolution-row { grid-template-columns: 1fr; }
+    .employee-upgrade-form { grid-template-columns: 1fr; }
     .topbar {
         align-items: flex-start;
         flex-direction: column;

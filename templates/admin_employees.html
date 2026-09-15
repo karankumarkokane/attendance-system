@@ -34,6 +34,16 @@
         </label>
 
         <label>
+            Designation
+            <input type="text" name="designation" placeholder="e.g. Intern" required>
+        </label>
+
+        <label>
+            Monthly Salary
+            <input type="number" name="salary" min="0" step="0.01" required>
+        </label>
+
+        <label>
             Allowed Radius Metres
             <input type="number" name="allowed_radius" min="1" value="100" required>
         </label>
@@ -61,6 +71,7 @@
 
 <section class="panel">
     <h2>Employee List</h2>
+    {% if updated %}<div class="save-confirmation">Employee designation and salary updated.</div>{% endif %}
 
     <div class="table-wrap">
         <table>
@@ -69,6 +80,8 @@
                     <th>Name</th>
                     <th>Username</th>
                     <th>Centre</th>
+                    <th>Designation</th>
+                    <th>Salary</th>
                     <th>Joining Date</th>
                     <th>Status</th>
                     <th>Last Office Day</th>
@@ -81,8 +94,16 @@
                     <td>{{ employee.full_name }}</td>
                     <td>{{ employee.username }}</td>
                     <td>{{ employee.centre }}</td>
+                    <td>{{ employee.get("designation") or "-" }}</td>
+                    <td>₹ {{ '%.2f'|format((employee.get("salary") or 0)|float) }}</td>
                     <td>{{ employee.joining_date }}</td>
                     <td>
+                        <form action="/upgrade_employee/{{ employee.id }}" method="POST" class="employee-upgrade-form">
+                            <input type="text" name="designation" value="{{ employee.get('designation') or '' }}" placeholder="Designation" required>
+                            <input type="number" name="salary" min="0" step="0.01" value="{{ employee.get('salary') or 0 }}" required>
+                            <input type="date" name="effective_from" max="{{ current_date }}" value="{{ current_date }}" required>
+                            <button class="small" type="submit">Upgrade / Update</button>
+                        </form>
                         {% if employee.is_active %}
                         <span class="status success-text">Active</span>
                         {% else %}
@@ -118,7 +139,7 @@
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="empty-state">No employees found.</td>
+                    <td colspan="9" class="empty-state">No employees found.</td>
                 </tr>
                 {% endfor %}
             </tbody>

@@ -34,6 +34,7 @@ from database import (
     get_employee,
     get_employees,
     add_employee,
+    update_employee_compensation,
     mark_employee_left,
     reactivate_employee,
     get_leave_balance,
@@ -46,7 +47,6 @@ from database import (
     get_active_holidays,
     get_attendance_report,
     get_payroll_source_data,
-    update_employee_salary,
     resolve_payroll_day,
     save_salary_slip,
     get_employee_salary_slips,
@@ -477,7 +477,9 @@ def admin_employees():
 
         "admin_employees.html",
 
-        employees=employees
+        employees=employees,
+        current_date=date.today().isoformat(),
+        updated=request.args.get("updated") == "1"
     )
 
 @app.route(
@@ -491,6 +493,14 @@ def add_employee_route():
 
     if not session.get("is_admin"):
         return "Access Denied"
+
+    try:
+        designation = request.form["designation"].strip()
+        salary = round(float(request.form["salary"]), 2)
+        if not designation or salary < 0:
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return "Enter a valid designation and non-negative monthly salary", 400
 
     add_employee(
 
@@ -510,12 +520,49 @@ def add_employee_route():
 
         int(request.form["allowed_radius"]),
 
-        request.form.get("is_admin") == "on"
+        request.form.get("is_admin") == "on",
+
+        designation,
+
+        salary,
+
+        session["employee_id"]
     )
 
     return redirect(
         "/admin_employees"
     )
+
+
+@app.route("/upgrade_employee/<int:employee_id>", methods=["POST"])
+def upgrade_employee_route(employee_id):
+    if "employee_id" not in session:
+        return redirect("/")
+    if not session.get("is_admin"):
+        return "Access Denied", 403
+    try:
+        designation = request.form["designation"].strip()
+        salary = round(float(request.form["salary"]), 2)
+        effective_from = date.fromisoformat(request.form["effective_from"])
+        employee = get_employee(employee_id)
+        joining_date = date.fromisoformat(employee["joining_date"])
+        if (
+            not designation
+            or salary < 0
+            or effective_from > date.today()
+            or effective_from < joining_date
+        ):
+            raise ValueError
+    except (KeyError, TypeError, ValueError):
+        return "Enter a valid designation, salary, and current or past effective date", 400
+    update_employee_compensation(
+        employee_id,
+        designation,
+        salary,
+        effective_from.isoformat(),
+        session["employee_id"],
+    )
+    return redirect("/admin_employees?updated=1")
 
 @app.route(
     "/mark_employee_left/<int:employee_id>",
@@ -844,10 +891,12 @@ def admin_payroll():
     month_end = date(year, month, calendar.monthrange(year, month)[1])
     if month_end >= date.today():
         return "Salary slips can only be generated after the selected month has ended", 400
-    employees, attendance, leaves, holidays = get_payroll_source_data(
+    employees, attendance, leaves, holidays, compensation = get_payroll_source_data(
         month_start.isoformat(), month_end.isoformat()
     )
-    payroll = build_monthly_payroll(year, month, employees, attendance, leaves, holidays)
+    payroll = build_monthly_payroll(
+        year, month, employees, attendance, leaves, holidays, compensation
+    )
     saved_slips = get_salary_slips_for_month(month_start.isoformat())
     saved_by_employee = {str(item["employee_id"]): item for item in saved_slips}
     for item in payroll:
@@ -859,22 +908,6 @@ def admin_payroll():
         print_mode=request.args.get("print") == "1",
         saved=request.args.get("saved") == "1",
     )
-
-
-@app.route("/update_employee_salary/<int:employee_id>", methods=["POST"])
-def update_employee_salary_route(employee_id):
-    if "employee_id" not in session:
-        return redirect("/")
-    if not session.get("is_admin"):
-        return "Access Denied", 403
-    try:
-        monthly_salary = round(float(request.form["monthly_salary"]), 2)
-        if monthly_salary < 0:
-            raise ValueError
-    except (KeyError, TypeError, ValueError):
-        return "Monthly salary must be a non-negative number", 400
-    update_employee_salary(employee_id, monthly_salary)
-    return redirect("/admin_payroll?month=" + request.form.get("month", ""))
 
 
 @app.route("/resolve_payroll_day", methods=["POST"])
@@ -910,10 +943,12 @@ def finalize_salary_slip(employee_id):
             return "Salary slips can only be saved after the month has ended", 400
     except (KeyError, TypeError, ValueError):
         return "Invalid payroll month", 400
-    employees, attendance, leaves, holidays = get_payroll_source_data(
+    employees, attendance, leaves, holidays, compensation = get_payroll_source_data(
         month_start.isoformat(), month_end.isoformat()
     )
-    payroll = build_monthly_payroll(year, month, employees, attendance, leaves, holidays)
+    payroll = build_monthly_payroll(
+        year, month, employees, attendance, leaves, holidays, compensation
+    )
     slip = next((item for item in payroll if str(item["employee"]["id"]) == str(employee_id)), None)
     if not slip:
         return "Employee is not eligible for this payroll month", 404
@@ -936,6 +971,8 @@ def finalize_salary_slip(employee_id):
         "net_salary": float(slip["net_salary"]),
         "leave_details": slip["approved_leave_details"],
         "generated_by": session["employee_id"],
+        "designation": slip["employee"].get("designation") or "Employee",
+        "compensation_details": slip["compensation_details"],
     })
     return redirect(f"/admin_payroll?month={month_value}&saved=1")
 

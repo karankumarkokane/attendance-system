@@ -516,7 +516,10 @@ def add_employee(
     latitude,
     longitude,
     allowed_radius,
-    is_admin
+    is_admin,
+    designation,
+    salary,
+    created_by
 ):
 
     response = (
@@ -541,6 +544,10 @@ def add_employee(
 
             "allowed_radius": allowed_radius,
 
+            "designation": designation,
+
+            "salary": salary,
+
             "is_admin": is_admin,
 
             "is_active": True
@@ -549,6 +556,43 @@ def add_employee(
         .execute()
     )
 
+    employee = response.data[0]
+    supabase.table("employee_compensation_history").insert({
+        "employee_id": employee["id"],
+        "effective_from": joining_date,
+        "designation": designation,
+        "salary": salary,
+        "changed_by": created_by,
+    }).execute()
+    return response
+
+
+def update_employee_compensation(employee_id, designation, salary, effective_from, changed_by):
+    values = {
+        "employee_id": employee_id,
+        "effective_from": effective_from,
+        "designation": designation,
+        "salary": salary,
+        "changed_by": changed_by,
+    }
+    existing = (
+        supabase.table("employee_compensation_history").select("id")
+        .eq("employee_id", employee_id)
+        .eq("effective_from", effective_from).execute().data
+    )
+    if existing:
+        response = (
+            supabase.table("employee_compensation_history").update(values)
+            .eq("id", existing[0]["id"]).execute()
+        )
+    else:
+        response = supabase.table("employee_compensation_history").insert(values).execute()
+    latest = (
+        supabase.table("employee_compensation_history")
+        .select("designation, salary").eq("employee_id", employee_id)
+        .order("effective_from", desc=True).limit(1).execute().data[0]
+    )
+    supabase.table("employees").update(latest).eq("id", employee_id).execute()
     return response
 
 
@@ -979,16 +1023,12 @@ def get_payroll_source_data(from_date, to_date):
         .execute()
         .data
     )
-    return employees, attendance, leaves, holidays
-
-
-def update_employee_salary(employee_id, monthly_salary):
-    return (
-        supabase.table("employees")
-        .update({"salary": monthly_salary})
-        .eq("id", employee_id)
-        .execute()
+    compensation = (
+        supabase.table("employee_compensation_history").select("*")
+        .lte("effective_from", to_date)
+        .order("effective_from").execute().data
     )
+    return employees, attendance, leaves, holidays, compensation
 
 
 def resolve_payroll_day(employee_id, attendance_date, resolution):

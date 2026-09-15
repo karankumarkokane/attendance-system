@@ -54,6 +54,30 @@ def create_salary_slip_pdf(slip):
         ("ALIGN", (1,0), (1,-1), "RIGHT"), ("PADDING", (0,0), (-1,-1), 8),
     ]))
     story.append(table)
+    compensation = slip.get("compensation_details") or []
+    if len(compensation) > 1:
+        story += [Spacer(1, 6*mm), Paragraph("<b>Compensation changes</b>", styles["BodyText"])]
+        compensation_rows = [["Period", "Designation", "Monthly salary", "Days", "Earned"]]
+        for item in compensation:
+            compensation_rows.append([
+                f"{item['from_date']} to {item['to_date']}",
+                item["designation"],
+                f"{float(item['salary']):,.2f}",
+                item["eligible_days"],
+                f"{float(item['earned']):,.2f}",
+            ])
+        compensation_table = Table(
+            compensation_rows, colWidths=[48*mm, 39*mm, 31*mm, 14*mm, 28*mm]
+        )
+        compensation_table.setStyle(TableStyle([
+            ("GRID", (0,0), (-1,-1), 0.5, colors.HexColor("#dfe5ef")),
+            ("BACKGROUND", (0,0), (-1,0), colors.HexColor("#eef4ff")),
+            ("FONTNAME", (0,0), (-1,0), "Helvetica-Bold"),
+            ("FONTSIZE", (0,0), (-1,-1), 8),
+            ("ALIGN", (2,1), (-1,-1), "RIGHT"),
+            ("PADDING", (0,0), (-1,-1), 5),
+        ]))
+        story.append(compensation_table)
     details = slip.get("leave_details") or []
     if details:
         story += [Spacer(1, 6*mm), Paragraph("<b>Approved CL/SL dates</b>", styles["BodyText"])]
