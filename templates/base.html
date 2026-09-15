@@ -4,15 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Attendance System{% endblock %}</title>
+    <title>{% block title %}Attendance System{% endblock %} | K &amp; K Learning Solutions</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
     <header class="topbar">
         <div>
-            <p class="eyebrow">Attendance System</p>
+            <p class="eyebrow">K &amp; K Learning Solutions</p>
             <h1>{% block page_title %}Dashboard{% endblock %}</h1>
+            <p class="app-label">Employee Attendance System</p>
         </div>
 
         {% if session.get("employee_id") %}
@@ -26,6 +27,7 @@
             {% if session.get("is_admin") %}
             <a href="/admin_employees">Employees</a>
             <a href="/admin_leaves">Leave Requests</a>
+            <a href="/admin_leave_summary">Leave Summary</a>
             <a href="/admin_holidays">Manage Holidays</a>
             <a href="/admin_payroll">Payroll</a>
             {% endif %}

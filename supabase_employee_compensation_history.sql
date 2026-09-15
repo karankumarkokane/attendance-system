@@ -13,9 +13,18 @@ create table if not exists public.employee_compensation_history (
 insert into public.employee_compensation_history (
     employee_id, effective_from, designation, salary
 )
-select id, joining_date,
-       coalesce(nullif(designation, ''), 'Employee'), coalesce(salary, 0)
-from public.employees
+select e.id,
+       coalesce(
+           e.joining_date,
+           (
+               select min(a.attendance_date)
+               from public.attendance a
+               where a.employee_id = e.id
+           ),
+           current_date
+       ),
+       coalesce(nullif(e.designation, ''), 'Employee'), coalesce(e.salary, 0)
+from public.employees e
 on conflict (employee_id, effective_from) do nothing;
 
 alter table public.salary_slips

@@ -830,6 +830,67 @@ def get_leave_balance(employee_id):
         "sl_remaining":
             total_sl - approved_sl
     }
+
+
+def get_admin_leave_summary(year):
+    """Return annual leave entitlement and approved usage for all employees."""
+    year_start = date(year, 1, 1)
+    year_end = date(year, 12, 31)
+    as_of = min(date.today(), year_end)
+    employees = (
+        supabase.table("employees").select("*")
+        .order("full_name").execute().data
+    )
+    leaves = (
+        supabase.table("leave_requests").select("*")
+        .eq("status", "Approved")
+        .lte("from_date", year_end.isoformat())
+        .gte("to_date", year_start.isoformat()).execute().data
+    )
+    unpaid_adjustments = (
+        supabase.table("attendance").select("employee_id, attendance_date")
+        .eq("status", "Admin Unpaid Leave")
+        .gte("attendance_date", year_start.isoformat())
+        .lte("attendance_date", year_end.isoformat()).execute().data
+    )
+    leaves_by_employee = {}
+    for leave in leaves:
+        leaves_by_employee.setdefault(str(leave["employee_id"]), []).append(leave)
+    unpaid_by_employee = {}
+    for row in unpaid_adjustments:
+        key = str(row["employee_id"])
+        unpaid_by_employee[key] = unpaid_by_employee.get(key, 0) + 1
+
+    summaries = []
+    for employee in employees:
+        joining_value = employee.get("joining_date")
+        joining_date = date.fromisoformat(joining_value) if joining_value else year_start
+        leaving_date = (
+            date.fromisoformat(employee["last_office_day"])
+            if employee.get("last_office_day") else None
+        )
+        if joining_date > as_of or (leaving_date and leaving_date < year_start):
+            continue
+        entitlement_employee = dict(employee)
+        entitlement_employee["joining_date"] = joining_date.isoformat()
+        entitlement = get_leave_entitlement(entitlement_employee, as_of)
+        taken = {"CL": 0, "SL": 0, "LWP": 0}
+        for leave in leaves_by_employee.get(str(employee["id"]), []):
+            leave_type = leave.get("leave_type")
+            if leave_type in taken:
+                taken[leave_type] += get_leave_days_in_year(leave, year)
+        taken["LWP"] += unpaid_by_employee.get(str(employee["id"]), 0)
+        summaries.append({
+            "employee": employee,
+            "total_cl": entitlement["total_cl"],
+            "total_sl": entitlement["total_sl"],
+            "cl_taken": taken["CL"],
+            "sl_taken": taken["SL"],
+            "lwp_taken": taken["LWP"],
+            "cl_remaining": max(0, entitlement["total_cl"] - taken["CL"]),
+            "sl_remaining": max(0, entitlement["total_sl"] - taken["SL"]),
+        })
+    return summaries
         
         
 def add_holiday(

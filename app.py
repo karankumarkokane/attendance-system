@@ -52,7 +52,8 @@ from database import (
     get_employee_salary_slips,
     get_salary_slips_for_month,
     get_salary_slip,
-    get_employee_month_attendance
+    get_employee_month_attendance,
+    get_admin_leave_summary
 )
 from payroll import build_monthly_payroll
 from salary_pdf import create_salary_slip_pdf
@@ -444,6 +445,26 @@ def admin_leaves():
         leaves=leaves
     )
 
+
+@app.route("/admin_leave_summary")
+def admin_leave_summary():
+    if "employee_id" not in session:
+        return redirect("/")
+    if not session.get("is_admin"):
+        return "Access Denied", 403
+    try:
+        year = int(request.args.get("year", date.today().year))
+        if year < 2000 or year > date.today().year:
+            raise ValueError
+    except (TypeError, ValueError):
+        return "Invalid leave summary year", 400
+    return render_template(
+        "admin_leave_summary.html",
+        summaries=get_admin_leave_summary(year),
+        selected_year=year,
+        current_year=date.today().year,
+    )
+
 @app.route("/admin_holidays")
 def admin_holidays():
 
@@ -545,12 +566,15 @@ def upgrade_employee_route(employee_id):
         salary = round(float(request.form["salary"]), 2)
         effective_from = date.fromisoformat(request.form["effective_from"])
         employee = get_employee(employee_id)
-        joining_date = date.fromisoformat(employee["joining_date"])
+        joining_date = (
+            date.fromisoformat(employee["joining_date"])
+            if employee.get("joining_date") else None
+        )
         if (
             not designation
             or salary < 0
             or effective_from > date.today()
-            or effective_from < joining_date
+            or (joining_date and effective_from < joining_date)
         ):
             raise ValueError
     except (KeyError, TypeError, ValueError):

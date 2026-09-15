@@ -54,6 +54,12 @@ a {
     text-transform: uppercase;
 }
 
+.app-label {
+    margin: 5px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+}
+
 .nav-actions {
     display: flex;
     flex-wrap: wrap;
