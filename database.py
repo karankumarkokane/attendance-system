@@ -1095,6 +1095,7 @@ def get_payroll_source_data(from_date, to_date):
 def resolve_payroll_day(employee_id, attendance_date, resolution):
     status_map = {
         "full_day": ("Admin Full Day", 8),
+        "present": ("Admin Present", 8),
         "half_day": ("Admin Half Day", 4),
         "paid_leave": ("Admin Paid Leave", 0),
         "unpaid_leave": ("Admin Unpaid Leave", 0),

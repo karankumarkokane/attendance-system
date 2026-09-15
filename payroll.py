@@ -135,7 +135,7 @@ def build_monthly_payroll(
                 summary["unauthorized_absences"].append(current.isoformat())
                 deduction_units += Decimal("1")
                 deduction += day_rate
-            elif row.get("status") == "Admin Full Day":
+            elif row.get("status") in {"Admin Full Day", "Admin Present"}:
                 summary["present_days"] += 1
             elif row.get("status") == "Admin Half Day":
                 summary["half_days"] += 1

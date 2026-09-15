@@ -36,10 +36,11 @@ def build_attendance_history(year, month, attendance, leaves, holidays, today=No
             status = leave_by_date[current] + (" (Punch recorded)" if row else "")
             status_class = "success-text"
         elif row and row.get("status") in {
-            "Admin Full Day", "Admin Half Day", "Admin Paid Leave", "Admin Unpaid Leave"
+            "Admin Full Day", "Admin Present", "Admin Half Day",
+            "Admin Paid Leave", "Admin Unpaid Leave"
         }:
             status = row["status"].replace("Admin ", "")
-            status_class = "success-text" if status in {"Full Day", "Paid Leave"} else "danger-text"
+            status_class = "success-text" if status in {"Full Day", "Present", "Paid Leave"} else "danger-text"
         elif row and (not row.get("punch_in") or not row.get("punch_out")):
             status = "Missing Punch"
             status_class = "danger-text"
