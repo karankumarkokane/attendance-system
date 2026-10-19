@@ -378,7 +378,7 @@ def apply_leave(
 
 def get_leave_requests():
 
-    response = (
+    leaves = (
         supabase.table(
             "leave_requests"
         )
@@ -388,9 +388,33 @@ def get_leave_requests():
             desc=True
         )
         .execute()
+        .data
     )
 
-    return response.data
+    employee_ids = list({
+        leave["employee_id"]
+        for leave in leaves
+        if leave.get("employee_id") is not None
+    })
+    employees = []
+    if employee_ids:
+        employees = (
+            supabase.table("employees")
+            .select("id, full_name")
+            .in_("id", employee_ids)
+            .execute()
+            .data
+        )
+    names_by_id = {
+        str(employee["id"]): employee["full_name"]
+        for employee in employees
+    }
+    for leave in leaves:
+        leave["employee_name"] = names_by_id.get(
+            str(leave.get("employee_id")), "Unknown Employee"
+        )
+
+    return leaves
 
 from datetime import datetime
 
