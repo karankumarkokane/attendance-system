@@ -74,6 +74,7 @@ def build_monthly_payroll(
             "half_days": 0,
             "unauthorized_absences": [],
             "missing_punches": [],
+            "short_hour_days": [],
             "warnings": [],
             "resolved_unpaid_leave_days": 0,
             "compensation_details": [],
@@ -160,9 +161,10 @@ def build_monthly_payroll(
                 deduction_units += Decimal("1")
                 deduction += day_rate
             elif float(row.get("total_hours") or 0) < 5:
-                summary["half_days"] += 1
-                deduction_units += Decimal("0.5")
-                deduction += day_rate * Decimal("0.5")
+                summary["short_hour_days"].append({
+                    "date": current.isoformat(),
+                    "total_hours": float(row.get("total_hours") or 0),
+                })
             else:
                 summary["present_days"] += 1
             current += timedelta(days=1)
@@ -200,12 +202,15 @@ def build_monthly_payroll(
             summary["warnings"].append("Absence without an approved leave request")
         if summary["missing_punches"]:
             summary["warnings"].append("Punch-in or punch-out is missing")
-        if summary["half_days"]:
-            summary["warnings"].append("Less than 5 hours recorded (half-day)")
+        if summary["short_hour_days"]:
+            summary["warnings"].append(
+                "Less than 5 hours recorded — confirm Present or Half Day"
+            )
         summary["can_finalize"] = bool(
             not salary_missing
             and not summary["unauthorized_absences"]
             and not summary["missing_punches"]
+            and not summary["short_hour_days"]
         )
         payroll.append(summary)
     return payroll
