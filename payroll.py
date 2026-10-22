@@ -69,6 +69,7 @@ def build_monthly_payroll(
             "paid_leave_days": 0,
             "cl_days": 0,
             "sl_days": 0,
+            "lwp_days": 0,
             "approved_leave_details": [],
             "half_days": 0,
             "unauthorized_absences": [],
@@ -121,12 +122,19 @@ def build_monthly_payroll(
             segment["earned"] += day_rate
             row = employee_attendance.get(current)
             if current in employee_leaves:
-                summary["paid_leave_days"] += 1
                 leave_type = employee_leaves[current]
                 if leave_type == "CL":
                     summary["cl_days"] += 1
+                    summary["paid_leave_days"] += 1
                 elif leave_type == "SL":
                     summary["sl_days"] += 1
+                    summary["paid_leave_days"] += 1
+                elif leave_type == "LWP":
+                    summary["lwp_days"] += 1
+                    deduction_units += Decimal("1")
+                    deduction += day_rate
+                else:
+                    summary["paid_leave_days"] += 1
                 summary["approved_leave_details"].append({
                     "date": current.isoformat(),
                     "leave_type": leave_type,

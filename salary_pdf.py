@@ -80,7 +80,7 @@ def create_salary_slip_pdf(slip):
         story.append(compensation_table)
     details = slip.get("leave_details") or []
     if details:
-        story += [Spacer(1, 6*mm), Paragraph("<b>Approved CL/SL dates</b>", styles["BodyText"])]
+        story += [Spacer(1, 6*mm), Paragraph("<b>Approved leave dates</b>", styles["BodyText"])]
         for item in details:
             story.append(Paragraph(f"{item['date']} - {item['leave_type']}", styles["BodyText"]))
     story += [Spacer(1, 10*mm), Paragraph("This is a system-generated salary slip.", styles["Italic"])]
